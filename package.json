@@ -1,0 +1,22 @@
+{
+  "name": "strike-it-lucky",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev":   "parcel       assets/entry.html --out-file=index.html",
+    "build": "parcel build assets/entry.html --out-file=index.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "elm-hot": "^1.1.4",
+    "node-elm-compiler": "^5.0.4",
+    "parcel-bundler": "^1.12.4",
+    "sass": "^1.23.7"
+  },
+  "dependencies": {
+    "normalize.css": "^8.0.1"
+  }
+}
