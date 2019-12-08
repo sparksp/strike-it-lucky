@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev":   "parcel       assets/entry.html --out-file=index.html",
+    "dev": "parcel assets/entry.html --out-file=index.html",
     "build": "parcel build assets/entry.html --out-file=index.html"
   },
   "keywords": [],
