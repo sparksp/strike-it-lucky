@@ -3,15 +3,20 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "directories": {
+    "test" : "test"
+  },
   "scripts": {
     "dev": "parcel assets/entry.html --out-file=index.html",
-    "build": "parcel build assets/entry.html --out-file=index.html"
+    "build": "parcel build assets/entry.html --out-file=index.html",
+    "test" : "elm-test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "elm-hot": "^1.1.4",
+    "elm-test": "^0.19.1-revision2",
     "node-elm-compiler": "^5.0.4",
     "parcel-bundler": "^1.12.4",
     "sass": "^1.23.7"

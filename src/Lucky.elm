@@ -1,6 +1,7 @@
 module Lucky exposing (Model, Msg, init, update, view)
 
 import Array exposing (Array)
+import Difficulty exposing (Difficulty)
 import Html exposing (Html, a, div, h1, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -47,6 +48,7 @@ type alias Model =
     , streak : Int
     , space : Maybe Space
     , board : Board
+    , difficulty : Difficulty
     }
 
 
@@ -56,6 +58,7 @@ initialModel =
     , streak = 0
     , space = Nothing
     , board = Array.repeat 9 Nothing
+    , difficulty = Difficulty.fromInt 4 |> Maybe.withDefault Difficulty.min
     }
 
 
@@ -74,19 +77,19 @@ getCurrentSelection model =
 --- COMMANDS
 
 
-randomTile : Int -> Random.Generator Tile
-randomTile streak =
+randomTile : Difficulty -> Int -> Random.Generator Tile
+randomTile difficulty streak =
     Random.weighted
         ( 15, Question Single )
         [ ( 4, Question Team )
-        , ( toFloat (4 * streak + 2), HotSpot )
+        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), HotSpot )
         , ( 4, Answer Pass )
         ]
 
 
-newTile : Int -> Cmd Msg
-newTile streak =
-    Random.generate NewTile (randomTile streak)
+newTile : Difficulty -> Int -> Cmd Msg
+newTile difficulty streak =
+    Random.generate NewTile (randomTile difficulty streak)
 
 
 
@@ -155,7 +158,7 @@ update msg model =
                 | board = selectSpace model.step ( space, Loading ) model.board
                 , space = Just space
               }
-            , newTile model.streak
+            , newTile model.difficulty model.streak
             )
 
         ( NewAnswer answer, Just space ) ->
