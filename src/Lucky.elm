@@ -1,4 +1,4 @@
-module Lucky exposing (Model, Msg, initialModel, update, view)
+module Lucky exposing (Model, Msg, init, update, view)
 
 import Array exposing (Array)
 import Html exposing (Html, a, div, h1, span, text)
@@ -57,6 +57,11 @@ initialModel =
     , space = Nothing
     , board = Array.repeat 9 Nothing
     }
+
+
+init : ( Model, Cmd Msg )
+init =
+    ( initialModel, Cmd.none )
 
 
 getCurrentSelection : Model -> Maybe Selection
