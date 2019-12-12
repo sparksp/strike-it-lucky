@@ -2,7 +2,7 @@ module Lucky exposing (Model, Msg, init, update, view)
 
 import Array exposing (Array)
 import Difficulty exposing (Difficulty)
-import Html exposing (Html, a, div, h1, span, text)
+import Html exposing (Html, a, div, h1, h2, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Random
@@ -49,6 +49,7 @@ type alias Model =
     , space : Maybe Space
     , board : Board
     , difficulty : Difficulty
+    , playerName : String
     }
 
 
@@ -59,6 +60,7 @@ initialModel =
     , space = Nothing
     , board = Array.repeat 9 Nothing
     , difficulty = Difficulty.fromInt 4 |> Maybe.withDefault Difficulty.min
+    , playerName = "Player 1"
     }
 
 
@@ -312,8 +314,8 @@ viewSpaceTiles active selection =
         )
 
 
-viewBoard : Int -> Board -> Html Msg
-viewBoard step board =
+viewBoard : String -> Int -> Board -> Html Msg
+viewBoard playerName step board =
     let
         currentSelection =
             getCurrentSelection step board
@@ -321,13 +323,16 @@ viewBoard step board =
         currentCanSelectSpace =
             canSelectSpace currentSelection step
     in
-    board
-        |> Array.indexedMap
-            (\index selection ->
-                viewSpaceTiles (currentCanSelectSpace index) selection
-            )
-        |> Array.toList
-        |> div [ class "board" ]
+    div [ class "active-player" ]
+        [ h2 [ class "player-name" ] [ text playerName ]
+        , board
+            |> Array.indexedMap
+                (\index selection ->
+                    viewSpaceTiles (currentCanSelectSpace index) selection
+                )
+            |> Array.toList
+            |> div [ class "board" ]
+        ]
 
 
 
@@ -340,12 +345,15 @@ viewSpace selection =
         [ selection |> Maybe.map selectionToTile |> viewTile ]
 
 
-viewMiniBoard : Board -> Html Msg
-viewMiniBoard board =
-    board
-        |> Array.map viewSpace
-        |> Array.toList
-        |> div [ class "board mini-board" ]
+viewMiniBoard : String -> Board -> Html Msg
+viewMiniBoard playerName board =
+    div [ class "player mini-board" ]
+        [ h2 [ class "player-name" ] [ text playerName ]
+        , board
+            |> Array.map viewSpace
+            |> Array.toList
+            |> div [ class "board" ]
+        ]
 
 
 viewQuestionControls : Int -> Maybe Selection -> List (Html Msg)
@@ -392,10 +400,10 @@ viewControls step board =
 
 
 view : Model -> Html Msg
-view { step, board } =
+view { playerName, step, board } =
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
-        , viewBoard step board
+        , viewBoard playerName step board
         , viewControls step board
-        , viewMiniBoard board
+        , viewMiniBoard playerName board
         ]
