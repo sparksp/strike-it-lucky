@@ -343,9 +343,9 @@ viewMiniBoard model =
         )
 
 
-viewQuestionControls : Model -> List (Html Msg)
-viewQuestionControls model =
-    case getCurrentSelection model of
+viewQuestionControls : Int -> Maybe Selection -> List (Html Msg)
+viewQuestionControls step currentSelection =
+    case currentSelection of
         Just ( _, Question _ ) ->
             [ span [ class "label" ] [ text "Answer:" ]
             , a [ class "btn btn-pass", onClick (NewAnswer Pass) ] [ text "Correct" ]
@@ -353,7 +353,7 @@ viewQuestionControls model =
             ]
 
         _ ->
-            if model.step < 9 then
+            if step < 9 then
                 [ span [ class "label" ] [ text "Choose:" ]
                 , a [ class "btn btn-space btn-top", onClick (Select Top) ] [ text "Top" ]
                 , a [ class "btn btn-space btn-middle", onClick (Select Middle) ] [ text "Middle" ]
@@ -364,21 +364,21 @@ viewQuestionControls model =
                 []
 
 
-viewResetControl : Model -> List (Html Msg)
-viewResetControl model =
-    if model.step == 0 && getCurrentSelection model == Nothing then
+viewResetControl : Int -> Maybe Selection -> List (Html Msg)
+viewResetControl step currentSelection =
+    if step == 0 && currentSelection == Nothing then
         [ a [ class "btn btn-disabled" ] [ text "Reset" ] ]
 
     else
         [ a [ class "btn btn-reset", onClick Reset ] [ text "Reset" ] ]
 
 
-viewControls : Model -> Html Msg
-viewControls model =
+viewControls : Int -> Maybe Selection -> Html Msg
+viewControls step currentSelection =
     div [ class "controls" ]
-        (viewQuestionControls model
+        (viewQuestionControls step currentSelection
             ++ [ span [ class "spacer" ] [] ]
-            ++ viewResetControl model
+            ++ viewResetControl step currentSelection
         )
 
 
@@ -387,6 +387,6 @@ view model =
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
         , viewBoard model
-        , viewControls model
+        , viewControls model.step (getCurrentSelection model)
         , viewMiniBoard model
         ]
