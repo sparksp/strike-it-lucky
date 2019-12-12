@@ -259,18 +259,26 @@ viewTileWithAction space tile =
         [ text (tileToString tile) ]
 
 
+selectionToTile : Selection -> Tile
+selectionToTile =
+    Tuple.second
+
+
+filterSelectionBySpace : Space -> Selection -> Maybe Selection
+filterSelectionBySpace currentSpace ( space, tile ) =
+    if currentSpace == space then
+        Just ( space, tile )
+
+    else
+        Nothing
+
+
 viewTileSpace : (Maybe Tile -> Html Msg) -> Space -> Maybe Selection -> Html Msg
 viewTileSpace viewer currentSpace selection =
-    case selection of
-        Nothing ->
-            viewer Nothing
-
-        Just ( space, tile ) ->
-            if currentSpace == space then
-                viewer (Just tile)
-
-            else
-                viewer Nothing
+    selection
+        |> Maybe.andThen (filterSelectionBySpace currentSpace)
+        |> Maybe.map selectionToTile
+        |> viewer
 
 
 canSelectSpace : Model -> Int -> Bool
@@ -323,13 +331,7 @@ viewBoard model =
 viewSpace : Maybe Selection -> Html Msg
 viewSpace selection =
     div [ class "space" ]
-        (case selection of
-            Just ( _, tile ) ->
-                [ viewTile (Just tile) ]
-
-            Nothing ->
-                [ viewTile Nothing ]
-        )
+        [ selection |> Maybe.map selectionToTile |> viewTile ]
 
 
 viewMiniBoard : Model -> Html Msg
