@@ -67,9 +67,9 @@ init =
     ( initialModel, Cmd.none )
 
 
-getCurrentSelection : Model -> Maybe Selection
-getCurrentSelection model =
-    Array.get model.step model.board
+getCurrentSelection : Int -> Board -> Maybe Selection
+getCurrentSelection step board =
+    Array.get step board
         |> Maybe.withDefault Nothing
 
 
@@ -281,14 +281,14 @@ viewTileSpace viewer currentSpace selection =
         |> viewer
 
 
-canSelectSpace : Model -> Int -> Bool
-canSelectSpace model step =
-    case getCurrentSelection model of
+canSelectSpace : Maybe Selection -> Int -> Int -> Bool
+canSelectSpace currentSelection currentStep step =
+    case currentSelection of
         Just ( _, Question _ ) ->
             False
 
         _ ->
-            if model.step < 9 && model.step == step then
+            if currentStep < 9 && currentStep == step then
                 True
 
             else
@@ -312,16 +312,22 @@ viewSpaceTiles active selection =
         )
 
 
-viewBoard : Model -> Html Msg
-viewBoard model =
-    div [ class "board" ]
-        (model.board
-            |> Array.indexedMap
-                (\index selection ->
-                    viewSpaceTiles (canSelectSpace model index) selection
-                )
-            |> Array.toList
-        )
+viewBoard : Int -> Board -> Html Msg
+viewBoard step board =
+    let
+        currentSelection =
+            getCurrentSelection step board
+
+        currentCanSelectSpace =
+            canSelectSpace currentSelection step
+    in
+    board
+        |> Array.indexedMap
+            (\index selection ->
+                viewSpaceTiles (currentCanSelectSpace index) selection
+            )
+        |> Array.toList
+        |> div [ class "board" ]
 
 
 
@@ -334,13 +340,12 @@ viewSpace selection =
         [ selection |> Maybe.map selectionToTile |> viewTile ]
 
 
-viewMiniBoard : Model -> Html Msg
-viewMiniBoard model =
-    div [ class "board mini-board" ]
-        (model.board
-            |> Array.map viewSpace
-            |> Array.toList
-        )
+viewMiniBoard : Board -> Html Msg
+viewMiniBoard board =
+    board
+        |> Array.map viewSpace
+        |> Array.toList
+        |> div [ class "board mini-board" ]
 
 
 viewQuestionControls : Int -> Maybe Selection -> List (Html Msg)
@@ -373,8 +378,12 @@ viewResetControl step currentSelection =
         [ a [ class "btn btn-reset", onClick Reset ] [ text "Reset" ] ]
 
 
-viewControls : Int -> Maybe Selection -> Html Msg
-viewControls step currentSelection =
+viewControls : Int -> Board -> Html Msg
+viewControls step board =
+    let
+        currentSelection =
+            getCurrentSelection step board
+    in
     div [ class "controls" ]
         (viewQuestionControls step currentSelection
             ++ [ span [ class "spacer" ] [] ]
@@ -383,10 +392,10 @@ viewControls step currentSelection =
 
 
 view : Model -> Html Msg
-view model =
+view { step, board } =
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
-        , viewBoard model
-        , viewControls model.step (getCurrentSelection model)
-        , viewMiniBoard model
+        , viewBoard step board
+        , viewControls step board
+        , viewMiniBoard board
         ]
