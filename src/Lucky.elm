@@ -161,7 +161,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.space ) of
         ( Reset, _ ) ->
-            ( initialModel, Cmd.none )
+            init
 
         ( Select space, Nothing ) ->
             ( { model
