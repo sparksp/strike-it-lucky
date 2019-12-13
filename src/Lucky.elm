@@ -313,19 +313,17 @@ canSelectSpace currentSelection currentStep step =
 
 viewSpaceTiles : Bool -> Maybe Selection -> Html Msg
 viewSpaceTiles active selection =
-    div [ class "space" ]
-        (if active then
-            [ viewTileSpace (viewTileWithAction Top) Top selection
-            , viewTileSpace (viewTileWithAction Middle) Middle selection
-            , viewTileSpace (viewTileWithAction Bottom) Bottom selection
-            ]
+    let
+        viewer =
+            if active then
+                \space -> viewTileSpace (viewTileWithAction space) space selection
 
-         else
-            [ viewTileSpace viewTile Top selection
-            , viewTileSpace viewTile Middle selection
-            , viewTileSpace viewTile Bottom selection
-            ]
-        )
+            else
+                \space -> viewTileSpace viewTile space selection
+    in
+    [ Top, Middle, Bottom ]
+        |> List.map viewer
+        |> div [ class "space" ]
 
 
 viewBoard : Player r -> Html Msg
