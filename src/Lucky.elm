@@ -43,12 +43,20 @@ type alias Board =
     Array (Maybe Selection)
 
 
+type alias Player r =
+    { r
+        | board : Board
+        , step : Int
+        , playerName : String
+    }
+
+
 type alias Model =
-    { step : Int
+    { difficulty : Difficulty
     , streak : Int
     , space : Maybe Space
     , board : Board
-    , difficulty : Difficulty
+    , step : Int
     , playerName : String
     }
 
@@ -314,8 +322,8 @@ viewSpaceTiles active selection =
         )
 
 
-viewBoard : String -> Int -> Board -> Html Msg
-viewBoard playerName step board =
+viewBoard : Player r -> Html Msg
+viewBoard { playerName, step, board } =
     let
         currentSelection =
             getCurrentSelection step board
@@ -345,8 +353,8 @@ viewSpace selection =
         [ selection |> Maybe.map selectionToTile |> viewTile ]
 
 
-viewMiniBoard : String -> Board -> Html Msg
-viewMiniBoard playerName board =
+viewMiniBoard : Player r -> Html Msg
+viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
@@ -386,8 +394,8 @@ viewResetControl step currentSelection =
         [ a [ class "btn btn-reset", onClick Reset ] [ text "Reset" ] ]
 
 
-viewControls : Int -> Board -> Html Msg
-viewControls step board =
+viewControls : Player r -> Html Msg
+viewControls { step, board } =
     let
         currentSelection =
             getCurrentSelection step board
@@ -399,11 +407,11 @@ viewControls step board =
         )
 
 
-view : Model -> Html Msg
-view { playerName, step, board } =
+view : Player r -> Html Msg
+view player =
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
-        , viewBoard playerName step board
-        , viewControls step board
-        , viewMiniBoard playerName board
+        , viewBoard player
+        , viewControls player
+        , viewMiniBoard player
         ]
