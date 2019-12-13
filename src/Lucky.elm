@@ -36,7 +36,9 @@ type Space
 
 
 type alias Selection =
-    ( Space, Tile )
+    { space : Space
+    , tile : Tile
+    }
 
 
 type alias Board =
@@ -165,7 +167,7 @@ update msg model =
 
         ( Select space, Nothing ) ->
             ( { model
-                | board = selectSpace model.step ( space, Loading ) model.board
+                | board = selectSpace model.step (Selection space Loading) model.board
                 , space = Just space
               }
             , newTile model.difficulty model.streak
@@ -177,7 +179,7 @@ update msg model =
                     Answer answer
             in
             ( { model
-                | board = selectSpace model.step ( space, tile ) model.board
+                | board = selectSpace model.step (Selection space tile) model.board
                 , step = updateStep tile model.step
                 , space = updateSpace tile space
                 , streak = updateStreak tile model.streak
@@ -187,7 +189,7 @@ update msg model =
 
         ( NewTile tile, Just space ) ->
             ( { model
-                | board = selectSpace model.step ( space, tile ) model.board
+                | board = selectSpace model.step (Selection space tile) model.board
                 , step = updateStep tile model.step
                 , space = updateSpace tile space
                 , streak = updateStreak tile model.streak
@@ -269,15 +271,10 @@ viewTileWithAction space tile =
         [ text (tileToString tile) ]
 
 
-selectionToTile : Selection -> Tile
-selectionToTile =
-    Tuple.second
-
-
 filterSelectionBySpace : Space -> Selection -> Maybe Selection
-filterSelectionBySpace currentSpace ( space, tile ) =
-    if currentSpace == space then
-        Just ( space, tile )
+filterSelectionBySpace currentSpace selection =
+    if currentSpace == selection.space then
+        Just selection
 
     else
         Nothing
@@ -287,22 +284,31 @@ viewTileSpace : (Maybe Tile -> Html Msg) -> Space -> Maybe Selection -> Html Msg
 viewTileSpace viewer currentSpace selection =
     selection
         |> Maybe.andThen (filterSelectionBySpace currentSpace)
-        |> Maybe.map selectionToTile
+        |> Maybe.map .tile
         |> viewer
+
+
+selectionIsQuestion : Selection -> Bool
+selectionIsQuestion { tile } =
+    case tile of
+        Question _ ->
+            True
+
+        _ ->
+            False
 
 
 canSelectSpace : Maybe Selection -> Int -> Int -> Bool
 canSelectSpace currentSelection currentStep step =
-    case currentSelection of
-        Just ( _, Question _ ) ->
-            False
+    if
+        currentSelection
+            |> Maybe.map selectionIsQuestion
+            |> Maybe.withDefault False
+    then
+        False
 
-        _ ->
-            if currentStep < 9 && currentStep == step then
-                True
-
-            else
-                False
+    else
+        currentStep < 9 && currentStep == step
 
 
 viewSpaceTiles : Bool -> Maybe Selection -> Html Msg
@@ -350,7 +356,7 @@ viewBoard { playerName, step, board } =
 viewSpace : Maybe Selection -> Html Msg
 viewSpace selection =
     div [ class "space" ]
-        [ selection |> Maybe.map selectionToTile |> viewTile ]
+        [ selection |> Maybe.map .tile |> viewTile ]
 
 
 viewMiniBoard : Player r -> Html Msg
@@ -366,23 +372,28 @@ viewMiniBoard { playerName, board } =
 
 viewQuestionControls : Int -> Maybe Selection -> List (Html Msg)
 viewQuestionControls step currentSelection =
-    case currentSelection of
-        Just ( _, Question _ ) ->
-            [ span [ class "label" ] [ text "Answer:" ]
-            , a [ class "btn btn-pass", onClick (NewAnswer Pass) ] [ text "Correct" ]
-            , a [ class "btn btn-fail", onClick (NewAnswer Fail) ] [ text "Wrong" ]
-            ]
+    if
+        currentSelection
+            |> Maybe.map selectionIsQuestion
+            |> Maybe.withDefault False
+    then
+        -- Answer Question
+        [ span [ class "label" ] [ text "Answer:" ]
+        , a [ class "btn btn-pass", onClick (NewAnswer Pass) ] [ text "Correct" ]
+        , a [ class "btn btn-fail", onClick (NewAnswer Fail) ] [ text "Wrong" ]
+        ]
 
-        _ ->
-            if step < 9 then
-                [ span [ class "label" ] [ text "Choose:" ]
-                , a [ class "btn btn-space btn-top", onClick (Select Top) ] [ text "Top" ]
-                , a [ class "btn btn-space btn-middle", onClick (Select Middle) ] [ text "Middle" ]
-                , a [ class "btn btn-space btn-bottom", onClick (Select Bottom) ] [ text "Bottom" ]
-                ]
+    else if step < 9 then
+        -- Choose Space
+        [ span [ class "label" ] [ text "Choose:" ]
+        , a [ class "btn btn-space btn-top", onClick (Select Top) ] [ text "Top" ]
+        , a [ class "btn btn-space btn-middle", onClick (Select Middle) ] [ text "Middle" ]
+        , a [ class "btn btn-space btn-bottom", onClick (Select Bottom) ] [ text "Bottom" ]
+        ]
 
-            else
-                []
+    else
+        -- Game Complete
+        []
 
 
 viewResetControl : Int -> Maybe Selection -> List (Html Msg)
