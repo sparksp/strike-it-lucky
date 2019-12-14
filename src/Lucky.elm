@@ -56,7 +56,6 @@ type alias Player r =
 type alias Model =
     { difficulty : Difficulty
     , streak : Int
-    , space : Maybe Space
     , board : Board
     , step : Int
     , playerName : String
@@ -67,7 +66,6 @@ initialModel : Model
 initialModel =
     { step = 0
     , streak = 0
-    , space = Nothing
     , board = Array.repeat 9 Nothing
     , difficulty = Difficulty.fromInt 4 |> Maybe.withDefault Difficulty.min
     , playerName = "Player 1"
@@ -112,7 +110,13 @@ type Msg
     = Select Space
     | NewTile Tile
     | NewAnswer Answer
+    | TryAgain
     | Reset
+
+
+clearSpace : Int -> Board -> Board
+clearSpace step board =
+    Array.set step Nothing board
 
 
 selectSpace : Int -> Selection -> Board -> Board
@@ -128,19 +132,6 @@ updateStep tile step =
 
         _ ->
             step
-
-
-updateSpace : Tile -> Space -> Maybe Space
-updateSpace tile currentSpace =
-    case tile of
-        Answer _ ->
-            Nothing
-
-        HotSpot ->
-            Nothing
-
-        _ ->
-            Just currentSpace
 
 
 updateStreak : Tile -> Int -> Int
@@ -161,19 +152,30 @@ updateStreak tile streak =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model.space ) of
+    let
+        currentSelection =
+            getCurrentSelection model.step model.board
+    in
+    case ( msg, currentSelection ) of
         ( Reset, _ ) ->
             init
+
+        ( TryAgain, _ ) ->
+            ( { model
+                | board = clearSpace model.step model.board
+                , streak = 0
+              }
+            , Cmd.none
+            )
 
         ( Select space, Nothing ) ->
             ( { model
                 | board = selectSpace model.step (Selection space Loading) model.board
-                , space = Just space
               }
             , newTile model.difficulty model.streak
             )
 
-        ( NewAnswer answer, Just space ) ->
+        ( NewAnswer answer, Just { space } ) ->
             let
                 tile =
                     Answer answer
@@ -181,17 +183,15 @@ update msg model =
             ( { model
                 | board = selectSpace model.step (Selection space tile) model.board
                 , step = updateStep tile model.step
-                , space = updateSpace tile space
                 , streak = updateStreak tile model.streak
               }
             , Cmd.none
             )
 
-        ( NewTile tile, Just space ) ->
+        ( NewTile tile, Just { space } ) ->
             ( { model
                 | board = selectSpace model.step (Selection space tile) model.board
                 , step = updateStep tile model.step
-                , space = updateSpace tile space
                 , streak = updateStreak tile model.streak
               }
             , Cmd.none
@@ -298,17 +298,22 @@ selectionIsQuestion { tile } =
             False
 
 
+selectionIsFail : Selection -> Bool
+selectionIsFail { tile } =
+    case tile of
+        Answer Fail ->
+            True
+
+        HotSpot ->
+            True
+
+        _ ->
+            False
+
+
 canSelectSpace : Maybe Selection -> Int -> Int -> Bool
 canSelectSpace currentSelection currentStep step =
-    if
-        currentSelection
-            |> Maybe.map selectionIsQuestion
-            |> Maybe.withDefault False
-    then
-        False
-
-    else
-        currentStep < 9 && currentStep == step
+    currentSelection == Nothing && currentStep == step
 
 
 viewSpaceTiles : Bool -> Maybe Selection -> Html Msg
@@ -379,6 +384,15 @@ viewQuestionControls step currentSelection =
         [ span [ class "label" ] [ text "Answer:" ]
         , a [ class "btn btn-pass", onClick (NewAnswer Pass) ] [ text "Correct" ]
         , a [ class "btn btn-fail", onClick (NewAnswer Fail) ] [ text "Wrong" ]
+        ]
+
+    else if
+        currentSelection
+            |> Maybe.map selectionIsFail
+            |> Maybe.withDefault False
+    then
+        [ span [ class "label" ] [ text "Game Over:" ]
+        , a [ class "btn btn-try-again", onClick TryAgain ] [ text "Try Again" ]
         ]
 
     else if step < 9 then
