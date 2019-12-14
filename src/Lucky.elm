@@ -3,7 +3,7 @@ module Lucky exposing (Model, Msg, init, update, view)
 import Array exposing (Array)
 import Difficulty exposing (Difficulty)
 import Html exposing (Html, a, div, h1, h2, span, text)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, classList)
 import Html.Events exposing (onClick)
 import Random
 
@@ -323,7 +323,7 @@ viewSpaceTiles active selection =
     in
     [ Top, Middle, Bottom ]
         |> List.map viewer
-        |> div [ class "space" ]
+        |> div [ classList [ ( "space", True ), ( "space-active", active ) ] ]
 
 
 viewBoard : Player r -> Html Msg
