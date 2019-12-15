@@ -7,17 +7,10 @@ import Lucky
 
 type Page
     = Lucky Lucky.Model
-    | Loading
 
 
 type alias Model =
     { page : Page }
-
-
-initialModel : Model
-initialModel =
-    { page = Loading
-    }
 
 
 init : () -> ( Model, Cmd Msg )
@@ -26,7 +19,7 @@ init () =
         ( luckyModel, cmd ) =
             Lucky.init
     in
-    ( { initialModel | page = Lucky luckyModel }, Cmd.map LuckyMsg cmd )
+    ( { page = Lucky luckyModel }, Cmd.map LuckyMsg cmd )
 
 
 type Msg
@@ -52,9 +45,6 @@ update msg model =
             Lucky.update luckyMsg luckyModel
                 |> processPageUpdate Lucky LuckyMsg model
 
-        ( _, _ ) ->
-            ( model, Cmd.none )
-
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
@@ -66,12 +56,7 @@ view model =
     case model.page of
         Lucky luckyModel ->
             { title = "Strike It Lucky"
-            , body = [ Html.map LuckyMsg (Lucky.view luckyModel) ]
-            }
-
-        Loading ->
-            { title = "Strike It Lucky"
-            , body = []
+            , body = [ Lucky.view luckyModel |> Html.map LuckyMsg ]
             }
 
 
