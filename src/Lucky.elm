@@ -67,7 +67,7 @@ initialModel =
     { step = 0
     , streak = 0
     , board = Array.repeat 9 Nothing
-    , difficulty = Difficulty.fromInt 4 |> Maybe.withDefault Difficulty.min
+    , difficulty = Difficulty.fromInt 4
     , playerName = "Player 1"
     }
 

@@ -14,46 +14,50 @@ suite =
             [ fuzz (intRange 1 10)
                 "Difficulty can be 1..10"
                 (\n ->
-                    Maybe.map Difficulty.toInt (Difficulty.fromInt n)
-                        |> Expect.equal (Just n)
+                    Difficulty.fromInt n
+                        |> Difficulty.toInt
+                        |> Expect.equal n
                 )
             , test "Difficulty cannot be zero"
                 (\() ->
                     Difficulty.fromInt 0
-                        |> Expect.equal Nothing
+                        |> Expect.equal Difficulty.min
                 )
             , fuzz (intRange minInt -1)
                 "Difficulty cannot be negative"
                 (\n ->
                     Difficulty.fromInt n
-                        |> Expect.equal Nothing
+                        |> Expect.equal Difficulty.min
                 )
             , fuzz (intRange 11 maxInt)
                 "Difficulty cannot be greater than 10"
                 (\n ->
                     Difficulty.fromInt n
-                        |> Expect.equal Nothing
+                        |> Expect.equal Difficulty.max
                 )
             ]
         , describe "toString"
             [ fuzz (intRange 1 10)
                 "Returns a String of the given difficulty"
                 (\n ->
-                    Maybe.map Difficulty.toString (Difficulty.fromInt n)
-                        |> Expect.equal (Just (String.fromInt n))
+                    Difficulty.fromInt n
+                        |> Difficulty.toString
+                        |> Expect.equal (String.fromInt n)
                 )
             ]
         , describe "min"
             [ test "is 1"
                 (\() ->
-                    Difficulty.toInt Difficulty.min
+                    Difficulty.min
+                        |> Difficulty.toInt
                         |> Expect.equal 1
                 )
             ]
         , describe "max"
             [ test "is 10"
                 (\() ->
-                    Difficulty.toInt Difficulty.max
+                    Difficulty.max
+                        |> Difficulty.toInt
                         |> Expect.equal 10
                 )
             ]

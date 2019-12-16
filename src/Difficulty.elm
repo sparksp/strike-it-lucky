@@ -1,8 +1,16 @@
-module Difficulty exposing (Difficulty, max, min, fromInt, toInt, toString)
+module Difficulty exposing
+    ( Difficulty, max, min, fromInt
+    , toInt, toString
+    )
 
 {-| Difficulty is a positive integer between 1 and 10.
 
-@docs Difficulty, max, min, fromInt, toInt, toString
+@docs Difficulty, max, min, fromInt
+
+
+# Conversion
+
+@docs toInt, toString
 
 -}
 
@@ -12,9 +20,9 @@ type Difficulty
     = Difficulty Int
 
 
-{-| The largest Difficulty. Useful as a default value or with `Maybe.withDefault`.
+{-| The largest Difficulty
 
-    fromInt 9 |> Maybe.withDefault max
+    min == fromInt 10
 
 -}
 max : Difficulty
@@ -22,9 +30,9 @@ max =
     Difficulty maxInt
 
 
-{-| The smallest Difficulty. Useful as a default value or with `Maybe.withDefault`.
+{-| The smallest Difficulty
 
-    fromInt 3 |> Maybe.withDefault min
+    min == fromInt 1
 
 -}
 min : Difficulty
@@ -32,24 +40,44 @@ min =
     Difficulty minInt
 
 
-{-| Create a `Difficulty` from an `Int`.
+{-| Create a `Difficulty` from an `Int`. If the Int is too small then `min` is returned. If the Int is too big then `max` is returned.
+
+    fromInt 5
+        |> toInt
+        == 5
+
+    fromInt -10 == min
+
+    fromInt 20 == max
+
 -}
-fromInt : Int -> Maybe Difficulty
+fromInt : Int -> Difficulty
 fromInt int =
-    if isDifficulty int then
-        Just (Difficulty int)
+    if int < minInt then
+        Difficulty minInt
+
+    else if int > maxInt then
+        Difficulty maxInt
 
     else
-        Nothing
+        Difficulty int
 
 
-{-| -}
+{-| an Int of the Difficulty
+
+    min |> toInt == 1
+
+-}
 toInt : Difficulty -> Int
 toInt (Difficulty int) =
     int
 
 
-{-| -}
+{-| a String of the Difficulty
+
+    max |> toString == "10"
+
+-}
 toString : Difficulty -> String
 toString (Difficulty int) =
     String.fromInt int
@@ -67,15 +95,3 @@ maxInt =
 minInt : Int
 minInt =
     1
-
-
-isDifficulty : Int -> Bool
-isDifficulty int =
-    if int < minInt then
-        False
-
-    else if int > maxInt then
-        False
-
-    else
-        True
