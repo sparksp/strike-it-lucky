@@ -29,14 +29,14 @@ type Tile
     | Answer Answer
 
 
-type Space
+type Location
     = Top
     | Middle
     | Bottom
 
 
 type alias Selection =
-    { space : Space
+    { location : Location
     , tile : Tile
     }
 
@@ -107,20 +107,20 @@ newTile difficulty streak =
 
 
 type Msg
-    = Select Space
+    = Select Location
     | NewTile Tile
     | NewAnswer Answer
     | TryAgain
     | Reset
 
 
-clearSpace : Int -> Board -> Board
-clearSpace step board =
+clearLocation : Int -> Board -> Board
+clearLocation step board =
     Array.set step Nothing board
 
 
-selectSpace : Int -> Selection -> Board -> Board
-selectSpace step selection board =
+selectLocation : Int -> Selection -> Board -> Board
+selectLocation step selection board =
     Array.set step (Just selection) board
 
 
@@ -162,35 +162,35 @@ update msg model =
 
         ( TryAgain, _ ) ->
             ( { model
-                | board = clearSpace model.step model.board
+                | board = clearLocation model.step model.board
                 , streak = 0
               }
             , Cmd.none
             )
 
-        ( Select space, Nothing ) ->
+        ( Select location, Nothing ) ->
             ( { model
-                | board = selectSpace model.step (Selection space Loading) model.board
+                | board = selectLocation model.step (Selection location Loading) model.board
               }
             , newTile model.difficulty model.streak
             )
 
-        ( NewAnswer answer, Just { space } ) ->
+        ( NewAnswer answer, Just { location } ) ->
             let
                 tile =
                     Answer answer
             in
             ( { model
-                | board = selectSpace model.step (Selection space tile) model.board
+                | board = selectLocation model.step (Selection location tile) model.board
                 , step = updateStep tile model.step
                 , streak = updateStreak tile model.streak
               }
             , Cmd.none
             )
 
-        ( NewTile tile, Just { space } ) ->
+        ( NewTile tile, Just { location } ) ->
             ( { model
-                | board = selectSpace model.step (Selection space tile) model.board
+                | board = selectLocation model.step (Selection location tile) model.board
                 , step = updateStep tile model.step
                 , streak = updateStreak tile model.streak
               }
@@ -261,29 +261,29 @@ viewTile tile =
         [ text (tileToString tile) ]
 
 
-viewTileWithAction : Space -> Maybe Tile -> Html Msg
-viewTileWithAction space tile =
+viewTileWithAction : Location -> Maybe Tile -> Html Msg
+viewTileWithAction location tile =
     div
         [ class "tile tile-action"
         , class (tileToClass tile)
-        , onClick (Select space)
+        , onClick (Select location)
         ]
         [ text (tileToString tile) ]
 
 
-filterSelectionBySpace : Space -> Selection -> Maybe Selection
-filterSelectionBySpace currentSpace selection =
-    if currentSpace == selection.space then
+filterSelectionByLocation : Location -> Selection -> Maybe Selection
+filterSelectionByLocation currentLocation selection =
+    if currentLocation == selection.location then
         Just selection
 
     else
         Nothing
 
 
-viewTileSpace : (Maybe Tile -> Html Msg) -> Space -> Maybe Selection -> Html Msg
-viewTileSpace viewer currentSpace selection =
+viewTileLocation : (Maybe Tile -> Html Msg) -> Location -> Maybe Selection -> Html Msg
+viewTileLocation viewer currentLocation selection =
     selection
-        |> Maybe.andThen (filterSelectionBySpace currentSpace)
+        |> Maybe.andThen (filterSelectionByLocation currentLocation)
         |> Maybe.map .tile
         |> viewer
 
@@ -311,24 +311,24 @@ selectionIsFail { tile } =
             False
 
 
-canSelectSpace : Maybe Selection -> Int -> Int -> Bool
-canSelectSpace currentSelection currentStep step =
+canSelectLocation : Maybe Selection -> Int -> Int -> Bool
+canSelectLocation currentSelection currentStep step =
     currentSelection == Nothing && currentStep == step
 
 
-viewSpaceTiles : Bool -> Maybe Selection -> Html Msg
-viewSpaceTiles active selection =
+viewLocationTiles : Bool -> Maybe Selection -> Html Msg
+viewLocationTiles active selection =
     let
         viewer =
             if active then
-                \space -> viewTileSpace (viewTileWithAction space) space selection
+                \location -> viewTileLocation (viewTileWithAction location) location selection
 
             else
-                \space -> viewTileSpace viewTile space selection
+                \location -> viewTileLocation viewTile location selection
     in
     [ Top, Middle, Bottom ]
         |> List.map viewer
-        |> div [ classList [ ( "space", True ), ( "space-active", active ) ] ]
+        |> div [ classList [ ( "location", True ), ( "location-active", active ) ] ]
 
 
 viewBoard : Player r -> Html Msg
@@ -337,15 +337,15 @@ viewBoard { playerName, step, board } =
         currentSelection =
             getCurrentSelection step board
 
-        currentCanSelectSpace =
-            canSelectSpace currentSelection step
+        currentCanSelectLocation =
+            canSelectLocation currentSelection step
     in
     div [ class "active-player" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
             |> Array.indexedMap
                 (\index selection ->
-                    viewSpaceTiles (currentCanSelectSpace index) selection
+                    viewLocationTiles (currentCanSelectLocation index) selection
                 )
             |> Array.toList
             |> div [ class "board" ]
@@ -356,9 +356,9 @@ viewBoard { playerName, step, board } =
 -- Mini Board
 
 
-viewSpace : Maybe Selection -> Html Msg
-viewSpace selection =
-    div [ class "space" ]
+viewLocation : Maybe Selection -> Html Msg
+viewLocation selection =
+    div [ class "location" ]
         [ selection |> Maybe.map .tile |> viewTile ]
 
 
@@ -367,7 +367,7 @@ viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
-            |> Array.map viewSpace
+            |> Array.map viewLocation
             |> Array.toList
             |> div [ class "board" ]
         ]
@@ -396,11 +396,11 @@ viewQuestionControls step currentSelection =
         ]
 
     else if step < 9 then
-        -- Choose Space
+        -- Choose Location
         [ span [ class "label" ] [ text "Choose:" ]
-        , a [ class "btn btn-space btn-top", onClick (Select Top) ] [ text "Top" ]
-        , a [ class "btn btn-space btn-middle", onClick (Select Middle) ] [ text "Middle" ]
-        , a [ class "btn btn-space btn-bottom", onClick (Select Bottom) ] [ text "Bottom" ]
+        , a [ class "btn btn-location btn-top", onClick (Select Top) ] [ text "Top" ]
+        , a [ class "btn btn-location btn-middle", onClick (Select Middle) ] [ text "Middle" ]
+        , a [ class "btn btn-location btn-bottom", onClick (Select Bottom) ] [ text "Bottom" ]
         ]
 
     else
@@ -425,8 +425,8 @@ viewControls { step, board } =
     in
     div [ class "controls" ]
         (viewQuestionControls step currentSelection
-            ++ [ span [ class "spacer" ] [] ]
-            ++ viewResetControl step currentSelection
+            ++ span [ class "spacer" ] []
+            :: viewResetControl step currentSelection
         )
 
 
