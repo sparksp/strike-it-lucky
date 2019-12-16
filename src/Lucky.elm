@@ -109,7 +109,8 @@ newTile difficulty streak =
 type Msg
     = Select Location
     | NewTile Tile
-    | NewAnswer Answer
+    | AnswerCorrect
+    | AnswerWrong
     | TryAgain
     | Reset
 
@@ -175,15 +176,19 @@ update msg model =
             , newTile model.difficulty model.streak
             )
 
-        ( NewAnswer answer, Just { location } ) ->
-            let
-                tile =
-                    Answer answer
-            in
+        ( AnswerWrong, Just { location } ) ->
             ( { model
-                | board = selectLocation model.step (Selection location tile) model.board
-                , step = updateStep tile model.step
-                , streak = updateStreak tile model.streak
+                | board = selectLocation model.step (Selection location (Answer Fail)) model.board
+                , streak = 0
+              }
+            , Cmd.none
+            )
+
+        ( AnswerCorrect, Just { location } ) ->
+            ( { model
+                | board = selectLocation model.step (Selection location (Answer Pass)) model.board
+                , step = model.step + 1
+                , streak = model.streak + 1
               }
             , Cmd.none
             )
@@ -382,8 +387,8 @@ viewQuestionControls step currentSelection =
     then
         -- Answer Question
         [ span [ class "label" ] [ text "Answer:" ]
-        , a [ class "btn btn-pass", onClick (NewAnswer Pass) ] [ text "Correct" ]
-        , a [ class "btn btn-fail", onClick (NewAnswer Fail) ] [ text "Wrong" ]
+        , a [ class "btn btn-pass", onClick AnswerCorrect ] [ text "Correct" ]
+        , a [ class "btn btn-fail", onClick AnswerWrong ] [ text "Wrong" ]
         ]
 
     else if
