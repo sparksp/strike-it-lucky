@@ -22,9 +22,9 @@ type Answer
     | Fail
 
 
-type Tile
-    = Question Question
-    | Answer Answer
+type RandomSelection
+    = RandomQuestion Question
+    | RandomAnswer Answer
 
 
 type Location
@@ -82,19 +82,19 @@ getCurrentSelection =
 --- COMMANDS
 
 
-randomTile : Difficulty -> Int -> Random.Generator Tile
-randomTile difficulty streak =
+randomSelection : Difficulty -> Int -> Random.Generator RandomSelection
+randomSelection difficulty streak =
     Random.weighted
-        ( 15, Question Single )
-        [ ( 4, Question Team )
-        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), Answer Fail )
-        , ( 4, Answer Pass )
+        ( 15, RandomQuestion Single )
+        [ ( 4, RandomQuestion Team )
+        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), RandomAnswer Fail )
+        , ( 4, RandomAnswer Pass )
         ]
 
 
 newTile : Difficulty -> Int -> Cmd Msg
 newTile difficulty streak =
-    Random.generate NewTile (randomTile difficulty streak)
+    Random.generate NewRandomSelection (randomSelection difficulty streak)
 
 
 
@@ -103,7 +103,7 @@ newTile difficulty streak =
 
 type Msg
     = Select Location
-    | NewTile Tile
+    | NewRandomSelection RandomSelection
     | AnswerCorrect
     | AnswerWrong
     | TryAgain
@@ -149,13 +149,13 @@ updateSelection selection model =
             model
 
 
-updateNewTile : Tile -> Location -> Model -> Model
-updateNewTile tile location model =
-    case tile of
-        Question question ->
+updateRandomSelection : RandomSelection -> Location -> Model -> Model
+updateRandomSelection selection location model =
+    case selection of
+        RandomQuestion question ->
             updateSelection (QuestionAt location question) model
 
-        Answer answer ->
+        RandomAnswer answer ->
             updateSelection (AnswerAt location answer) model
 
 
@@ -189,8 +189,8 @@ update msg model =
             , Cmd.none
             )
 
-        ( NewTile tile, LoadingAt location ) ->
-            ( updateNewTile tile location model
+        ( NewRandomSelection selection, LoadingAt location ) ->
+            ( updateRandomSelection selection location model
             , Cmd.none
             )
 
