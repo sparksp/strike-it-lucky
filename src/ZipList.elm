@@ -2,7 +2,7 @@ module ZipList exposing
     ( ZipList, fromLists, singleton
     , toList, before, selected, after
     , next, rewind, select
-    , append, map, prepend
+    , map, append, prepend, update
     )
 
 {-| A non-empty list.
@@ -21,7 +21,7 @@ module ZipList exposing
 
 # Updating
 
-@docs append, map, prepend
+@docs map, append, prepend, update
 
 -}
 
@@ -186,6 +186,19 @@ append newItems (ZipList list) =
         list.previous
         list.current
         (list.remaining ++ newItems)
+
+
+{-| replace the current item
+
+    .fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+        |> .update 9
+        |> .current
+        == 9
+
+-}
+update : a -> ZipList a -> ZipList a
+update newItem (ZipList list) =
+    fromLists list.previous newItem list.remaining
 
 
 {-| select the first item

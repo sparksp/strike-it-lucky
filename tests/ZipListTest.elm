@@ -4,12 +4,17 @@ import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, intRange)
 import Random exposing (maxInt, minInt)
 import Test exposing (..)
-import ZipList
+import ZipList exposing (ZipList)
 
 
 isEven : Int -> Bool
 isEven n =
     (n // 2) * 2 == n
+
+
+expectEqualZipLists : List a -> a -> List a -> ZipList a -> Expectation
+expectEqualZipLists before current after zipList =
+    Expect.equal (ZipList.fromLists before current after) zipList
 
 
 suite : Test
@@ -78,6 +83,13 @@ suite =
                         |> ZipList.toList
                         |> Expect.equal [ "1", "2", "3", "4", "5", "6" ]
                 )
+            ]
+        , describe "update"
+            [ test "replaces the current item in the list" <|
+                \_ ->
+                    ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+                        |> ZipList.update 9
+                        |> expectEqualZipLists [ 1, 2 ] 9 [ 4, 5, 6 ]
             ]
         , describe "prepend"
             [ test "adds new items before the list"
