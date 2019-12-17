@@ -73,6 +73,16 @@ suite =
                         |> ZipList.map String.fromInt
                         |> expectEqualZipLists [ "1", "2" ] "3" [ "4", "5", "6" ]
             ]
+        , describe "mapWithPosition"
+            [ test "transforms each element of the list with a position" <|
+                \_ ->
+                    ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+                        |> (ZipList.mapWithPosition <|
+                                \position item ->
+                                    ( position, item )
+                           )
+                        |> expectEqualZipLists [ ( ZipList.Before, 1 ), ( ZipList.Before, 2 ) ] ( ZipList.Selected, 3 ) [ ( ZipList.After, 4 ), ( ZipList.After, 5 ), ( ZipList.After, 6 ) ]
+            ]
         , describe "update"
             [ test "replaces the current item in the list" <|
                 \_ ->

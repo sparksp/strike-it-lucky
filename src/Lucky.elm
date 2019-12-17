@@ -6,6 +6,7 @@ import Html exposing (Html, a, div, h1, h2, span, text)
 import Html.Attributes exposing (class, classList)
 import Html.Events exposing (onClick)
 import Random
+import ZipList exposing (ZipList)
 
 
 
@@ -41,13 +42,12 @@ type alias Selection =
 
 
 type alias Board =
-    Array (Maybe Selection)
+    ZipList (Maybe Selection)
 
 
 type alias Player r =
     { r
         | board : Board
-        , step : Int
         , playerName : String
     }
 
@@ -56,16 +56,14 @@ type alias Model =
     { difficulty : Difficulty
     , streak : Int
     , board : Board
-    , step : Int
     , playerName : String
     }
 
 
 initialModel : Model
 initialModel =
-    { step = 0
-    , streak = 0
-    , board = Array.repeat 9 Nothing
+    { streak = 0
+    , board = ZipList.fromLists [] Nothing (List.repeat 8 Nothing)
     , difficulty = Difficulty.fromInt 4
     , playerName = "Player 1"
     }
@@ -76,10 +74,9 @@ init =
     ( initialModel, Cmd.none )
 
 
-getCurrentSelection : Int -> Board -> Maybe Selection
-getCurrentSelection step board =
-    Array.get step board
-        |> Maybe.withDefault Nothing
+getCurrentSelection : Board -> Maybe Selection
+getCurrentSelection board =
+    ZipList.selected board
 
 
 
@@ -114,24 +111,14 @@ type Msg
     | Reset
 
 
-clearLocation : Int -> Board -> Board
-clearLocation step board =
-    Array.set step Nothing board
+clearLocation : Board -> Board
+clearLocation board =
+    ZipList.update Nothing board
 
 
-selectLocation : Int -> Selection -> Board -> Board
-selectLocation step selection board =
-    Array.set step (Just selection) board
-
-
-updateStep : Tile -> Int -> Int
-updateStep tile step =
-    case tile of
-        Answer Pass ->
-            step + 1
-
-        _ ->
-            step
+selectLocation : Selection -> Board -> Board
+selectLocation selection board =
+    ZipList.update (Just selection) board
 
 
 updateStreak : Tile -> Int -> Int
@@ -147,57 +134,72 @@ updateStreak tile streak =
             streak
 
 
+updateNewTile : Location -> Tile -> Model -> Model
+updateNewTile location tile model =
+    case tile of
+        Answer Pass ->
+            { model
+                | board = selectLocation (Selection location tile) model.board |> ZipList.next
+                , streak = model.streak + 1
+            }
+
+        Answer Fail ->
+            { model
+                | board = selectLocation (Selection location tile) model.board
+                , streak = 0
+            }
+
+        Question _ ->
+            { model
+                | board = selectLocation (Selection location tile) model.board
+            }
+
+        Loading ->
+            { model
+                | board = selectLocation (Selection location tile) model.board
+            }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         currentSelection =
-            getCurrentSelection model.step model.board
+            getCurrentSelection model.board
     in
     case ( msg, currentSelection ) of
         ( Reset, _ ) ->
             init
 
+        -- Should only be when (tile == Answer Fail)
         ( TryAgain, _ ) ->
-            ( { model
-                | board = clearLocation model.step model.board
-                , streak = 0
-              }
+            ( { model | board = clearLocation model.board }
             , Cmd.none
             )
 
         ( Select location, Nothing ) ->
-            ( { model
-                | board = selectLocation model.step (Selection location Loading) model.board
-              }
+            ( updateNewTile location Loading model
             , newTile model.difficulty model.streak
             )
 
+        -- Should only be when (tile == Question _)
         ( AnswerWrong, Just { location } ) ->
-            ( { model
-                | board = selectLocation model.step (Selection location (Answer Fail)) model.board
-                , streak = 0
-              }
+            ( updateNewTile location (Answer Fail) model
             , Cmd.none
             )
 
+        -- Should only be when (tile == Question _)
         ( AnswerCorrect, Just { location } ) ->
-            ( { model
-                | board = selectLocation model.step (Selection location (Answer Pass)) model.board
-                , step = model.step + 1
-                , streak = model.streak + 1
-              }
+            ( updateNewTile location (Answer Pass) model
             , Cmd.none
             )
 
+        -- Should only be when (tile == Loading)
         ( NewTile tile, Just { location } ) ->
-            ( { model
-                | board = selectLocation model.step (Selection location tile) model.board
-                , step = updateStep tile model.step
-                , streak = updateStreak tile model.streak
-              }
+            ( updateNewTile location tile model
             , Cmd.none
             )
 
+        -- Oops! Log this in dev?
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -298,9 +300,9 @@ selectionIsFail { tile } =
     tile == Answer Fail
 
 
-canSelectLocation : Maybe Selection -> Int -> Int -> Bool
-canSelectLocation currentSelection currentStep step =
-    currentSelection == Nothing && currentStep == step
+canSelectLocation : Maybe Selection -> ZipList.Position -> Bool
+canSelectLocation currentSelection position =
+    currentSelection == Nothing && position == ZipList.Selected
 
 
 viewLocationTiles : Bool -> Maybe Selection -> Html Msg
@@ -319,22 +321,22 @@ viewLocationTiles active selection =
 
 
 viewBoard : Player r -> Html Msg
-viewBoard { playerName, step, board } =
+viewBoard { playerName, board } =
     let
         currentSelection =
-            getCurrentSelection step board
+            getCurrentSelection board
 
         currentCanSelectLocation =
-            canSelectLocation currentSelection step
+            canSelectLocation currentSelection
     in
     div [ class "active-player" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
-            |> Array.indexedMap
-                (\index selection ->
-                    viewLocationTiles (currentCanSelectLocation index) selection
+            |> ZipList.mapWithPosition
+                (\position selection ->
+                    viewLocationTiles (currentCanSelectLocation position) selection
                 )
-            |> Array.toList
+            |> ZipList.toList
             |> div [ class "board" ]
         ]
 
@@ -354,14 +356,14 @@ viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
-            |> Array.map viewLocation
-            |> Array.toList
+            |> ZipList.map viewLocation
+            |> ZipList.toList
             |> div [ class "board" ]
         ]
 
 
-viewQuestionControls : Int -> Maybe Selection -> List (Html Msg)
-viewQuestionControls step currentSelection =
+viewQuestionControls : Maybe Selection -> List (Html Msg)
+viewQuestionControls currentSelection =
     if
         currentSelection
             |> Maybe.map selectionIsQuestion
@@ -382,7 +384,7 @@ viewQuestionControls step currentSelection =
         , a [ class "btn btn-try-again", onClick TryAgain ] [ text "Try Again" ]
         ]
 
-    else if step < 9 then
+    else if currentSelection == Nothing then
         -- Choose Location
         [ span [ class "label" ] [ text "Choose:" ]
         , a [ class "btn btn-location btn-top", onClick (Select Top) ] [ text "Top" ]
@@ -395,9 +397,9 @@ viewQuestionControls step currentSelection =
         []
 
 
-viewResetControl : Int -> Maybe Selection -> List (Html Msg)
-viewResetControl step currentSelection =
-    if step == 0 && currentSelection == Nothing then
+viewResetControl : Board -> List (Html Msg)
+viewResetControl board =
+    if ZipList.before board == [] && ZipList.selected board == Nothing then
         [ a [ class "btn btn-disabled" ] [ text "Reset" ] ]
 
     else
@@ -405,15 +407,15 @@ viewResetControl step currentSelection =
 
 
 viewControls : Player r -> Html Msg
-viewControls { step, board } =
+viewControls { board } =
     let
         currentSelection =
-            getCurrentSelection step board
+            getCurrentSelection board
     in
     div [ class "controls" ]
-        (viewQuestionControls step currentSelection
+        (viewQuestionControls currentSelection
             ++ span [ class "spacer" ] []
-            :: viewResetControl step currentSelection
+            :: viewResetControl board
         )
 
 

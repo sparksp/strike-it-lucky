@@ -2,7 +2,7 @@ module ZipList exposing
     ( ZipList, fromLists, singleton
     , toList, before, selected, after
     , next, rewind, select
-    , map, append, prepend, update
+    , map, mapWithPosition, Position(..), append, prepend, update
     )
 
 {-| A non-empty list.
@@ -21,7 +21,7 @@ module ZipList exposing
 
 # Updating
 
-@docs map, append, prepend, update
+@docs map, mapWithPosition, Position, append, prepend, update
 
 -}
 
@@ -122,6 +122,36 @@ map fn (ZipList list) =
         (List.map fn list.previous)
         (fn list.current)
         (List.map fn list.remaining)
+
+
+{-| transform each element of the list, the function receives a `Position`
+which is `Selected`, `Before` or `After`.
+
+    doubleOrNegate position num =
+        if position == Selected then
+            num * -1
+        else
+            num * 2
+
+    .fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+        |> .mapWithPosition doubleOrNegate
+        == .fromLists [ 2, 4 ] -3 [ 8, 10, 12 ]
+
+-}
+mapWithPosition : (Position -> a -> b) -> ZipList a -> ZipList b
+mapWithPosition fn (ZipList list) =
+    fromLists
+        (List.map (fn Before) list.previous)
+        (fn Selected list.current)
+        (List.map (fn After) list.remaining)
+
+
+{-| Used with [`mapWithPosition`](#mapWithPosition).
+-}
+type Position
+    = Before
+    | Selected
+    | After
 
 
 {-| check each value in the list select the first to be True
