@@ -24,8 +24,7 @@ suite =
             [ test "is a list of the given item" <|
                 \_ ->
                     ZipList.singleton 1
-                        |> ZipList.toList
-                        |> Expect.equal [ 1 ]
+                        |> expectEqualZipLists [] 1 []
             ]
         , describe "fromLists"
             [ test "is a list of the given items" <|
@@ -35,21 +34,21 @@ suite =
                         |> Expect.equal [ 1, 2, 3, 4, 5, 6 ]
             ]
         , describe "before"
-            [ test "is a list of the items before current" <|
+            [ test "is a list of the items before selected" <|
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.before
                         |> Expect.equal [ 1, 2 ]
             ]
         , describe "selected"
-            [ test "is the current item" <|
+            [ test "is the selected item" <|
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.selected
                         |> Expect.equal 3
             ]
         , describe "after"
-            [ test "is a list of the items after current" <|
+            [ test "is a list of the items after selected" <|
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.after
@@ -67,14 +66,12 @@ suite =
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.map (\n -> n * 2)
-                        |> ZipList.toList
-                        |> Expect.equal [ 2, 4, 6, 8, 10, 12 ]
+                        |> expectEqualZipLists [ 2, 4 ] 6 [ 8, 10, 12 ]
             , test "can change items to a new item type" <|
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.map String.fromInt
-                        |> ZipList.toList
-                        |> Expect.equal [ "1", "2", "3", "4", "5", "6" ]
+                        |> expectEqualZipLists [ "1", "2" ] "3" [ "4", "5", "6" ]
             ]
         , describe "update"
             [ test "replaces the current item in the list" <|
@@ -110,7 +107,7 @@ suite =
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.select isEven
-                        |> Expect.equal (ZipList.fromLists [ 1 ] 2 [ 3, 4, 5, 6 ])
+                        |> expectEqualZipLists [ 1 ] 2 [ 3, 4, 5, 6 ]
             ]
         , describe "rewind"
             [ test "with a singleton, is the same list" <|
@@ -122,7 +119,7 @@ suite =
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.rewind
-                        |> Expect.equal (ZipList.fromLists [] 1 [ 2, 3, 4, 5, 6 ])
+                        |> expectEqualZipLists [] 1 [ 2, 3, 4, 5, 6 ]
             ]
         , describe "next"
             [ test "with a singleton, is the same list" <|
@@ -134,11 +131,11 @@ suite =
                 \_ ->
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.next
-                        |> Expect.equal (ZipList.fromLists [ 1, 2, 3 ] 4 [ 5, 6 ])
+                        |> expectEqualZipLists [ 1, 2, 3 ] 4 [ 5, 6 ]
             , test "at the end of a list, selects the first item" <|
                 \_ ->
                     ZipList.fromLists [ 1, 2, 3, 4, 5 ] 6 []
                         |> ZipList.next
-                        |> Expect.equal (ZipList.fromLists [] 1 [ 2, 3, 4, 5, 6 ])
+                        |> expectEqualZipLists [] 1 [ 2, 3, 4, 5, 6 ]
             ]
         ]
