@@ -104,8 +104,7 @@ newTile difficulty streak =
 type Msg
     = Select Location
     | NewRandomSelection RandomSelection
-    | AnswerCorrect
-    | AnswerWrong
+    | Answer Answer
     | TryAgain
     | Reset
 
@@ -179,13 +178,8 @@ update msg model =
             , newTile model.difficulty model.streak
             )
 
-        ( AnswerWrong, QuestionAt location _ ) ->
-            ( updateSelection (AnswerAt location Fail) model
-            , Cmd.none
-            )
-
-        ( AnswerCorrect, QuestionAt location _ ) ->
-            ( updateSelection (AnswerAt location Pass) model
+        ( Answer answer, QuestionAt location _ ) ->
+            ( updateSelection (AnswerAt location answer) model
             , Cmd.none
             )
 
@@ -318,8 +312,8 @@ viewQuestionControls currentSelection =
     case currentSelection of
         QuestionAt _ _ ->
             [ span [ class "label" ] [ text "Answer:" ]
-            , viewButton AnswerCorrect "btn-pass" "Correct"
-            , viewButton AnswerWrong "btn-fail" "Wrong"
+            , viewButton (Answer Pass) "btn-pass" "Correct"
+            , viewButton (Answer Fail) "btn-fail" "Wrong"
             ]
 
         AnswerAt _ Fail ->
