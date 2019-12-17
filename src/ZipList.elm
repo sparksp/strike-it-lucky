@@ -1,8 +1,8 @@
 module ZipList exposing
     ( ZipList, fromLists, singleton
     , toList, before, selected, after
-    , next, rewind, select
-    , map, mapWithPosition, Position(..), append, prepend, update
+    , next, loop, rewind, select
+    , map, mapSelected, mapWithPosition, Position(..), append, prepend, update
     )
 
 {-| A non-empty list.
@@ -16,12 +16,12 @@ module ZipList exposing
 
 # Traversal
 
-@docs next, rewind, select
+@docs next, loop, rewind, select
 
 
 # Updating
 
-@docs map, mapWithPosition, Position, append, prepend, update
+@docs map, mapSelected, mapWithPosition, Position, append, prepend, update
 
 -}
 
@@ -122,6 +122,22 @@ map fn (ZipList list) =
         (List.map fn list.previous)
         (fn list.current)
         (List.map fn list.remaining)
+
+
+{-| transform the selected element of the list
+
+    .fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+        |> .mapSelected (\n -> n * n)
+        |> .toList
+        == [ 1, 2, 9, 4, 5, 6 ]
+
+-}
+mapSelected : (a -> a) -> ZipList a -> ZipList a
+mapSelected fn (ZipList list) =
+    fromLists
+        list.previous
+        (fn list.current)
+        list.remaining
 
 
 {-| transform each element of the list, the function receives a `Position`
@@ -249,16 +265,44 @@ rewind ((ZipList list) as original) =
             fromLists [] first (otherItems ++ list.current :: list.remaining)
 
 
-{-| select the next item, when the list is at the end it will rewind
+{-| select the next item
 
-    .fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+    .fromLists [ 1 ] 2 [ 3 ]
         |> .next
         |> .selected
-        == 4
+        == 3
+
+    .fromLists [ 1, 2 ] 3 []
+        |> .next
+        |> .selected
+        == 3
 
 -}
 next : ZipList a -> ZipList a
 next ((ZipList list) as original) =
+    case list.remaining of
+        [] ->
+            original
+
+        nextItem :: otherItems ->
+            fromLists (list.previous ++ [ list.current ]) nextItem otherItems
+
+
+{-| like `next`, select the next item in the list, when the list is at the end it will rewind
+
+    .fromLists [ 1 ] 2 [ 3 ]
+        |> .loop
+        |> .selected
+        == 3
+
+    .fromLists [ 1, 2 ] 3 []
+        |> .loop
+        |> .selected
+        == 1
+
+-}
+loop : ZipList a -> ZipList a
+loop ((ZipList list) as original) =
     case list.remaining of
         [] ->
             rewind original

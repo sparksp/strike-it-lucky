@@ -73,6 +73,13 @@ suite =
                         |> ZipList.map String.fromInt
                         |> expectEqualZipLists [ "1", "2" ] "3" [ "4", "5", "6" ]
             ]
+        , describe "mapSelected"
+            [ test "transforms the selected element of the list" <|
+                \_ ->
+                    ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+                        |> ZipList.mapSelected (\n -> n * n)
+                        |> expectEqualZipLists [ 1, 2 ] 9 [ 4, 5, 6 ]
+            ]
         , describe "mapWithPosition"
             [ test "transforms each element of the list with a position" <|
                 \_ ->
@@ -142,10 +149,27 @@ suite =
                     ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
                         |> ZipList.next
                         |> expectEqualZipLists [ 1, 2, 3 ] 4 [ 5, 6 ]
-            , test "at the end of a list, selects the first item" <|
+            , test "at the end of a list, selects the last item" <|
                 \_ ->
                     ZipList.fromLists [ 1, 2, 3, 4, 5 ] 6 []
                         |> ZipList.next
+                        |> expectEqualZipLists [ 1, 2, 3, 4, 5 ] 6 []
+            ]
+        , describe "loop"
+            [ test "with a singleton, is the same list" <|
+                \_ ->
+                    ZipList.singleton 3
+                        |> ZipList.loop
+                        |> Expect.equal (ZipList.singleton 3)
+            , test "selects the next item" <|
+                \_ ->
+                    ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+                        |> ZipList.loop
+                        |> expectEqualZipLists [ 1, 2, 3 ] 4 [ 5, 6 ]
+            , test "at the end of a list, selects the first item" <|
+                \_ ->
+                    ZipList.fromLists [ 1, 2, 3, 4, 5 ] 6 []
+                        |> ZipList.loop
                         |> expectEqualZipLists [] 1 [ 2, 3, 4, 5, 6 ]
             ]
         ]

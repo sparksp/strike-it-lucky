@@ -44,27 +44,29 @@ type alias Board =
     ZipList Selection
 
 
-type alias Player r =
-    { r
-        | board : Board
-        , playerName : String
+type alias Player =
+    { board : Board
+    , playerName : String
     }
 
 
 type alias Model =
     { difficulty : Difficulty
     , streak : Int
-    , board : Board
-    , playerName : String
+    , players : ZipList Player
     }
+
+
+initBoard : Board
+initBoard =
+    ZipList.fromLists [] NotSelected (List.repeat 8 NotSelected)
 
 
 initialModel : Model
 initialModel =
-    { streak = 0
-    , board = ZipList.fromLists [] NotSelected (List.repeat 8 NotSelected)
-    , difficulty = Difficulty.fromInt 4
-    , playerName = "Player 1"
+    { difficulty = Difficulty.fromInt 4
+    , streak = 0
+    , players = ZipList.fromLists [] (Player initBoard "Player 1") [ Player initBoard "Player 2" ]
     }
 
 
@@ -105,47 +107,43 @@ type Msg
     = Select Location
     | NewRandomSelection RandomSelection
     | Answer Answer
-    | Continue
+    | NextPlayer
     | Reset
 
 
-clearLocation : Board -> Board
-clearLocation =
-    ZipList.update NotSelected
-
-
-selectLocation : Selection -> Board -> Board
-selectLocation selection =
-    ZipList.update selection
+updatePlayerBoard : (Board -> Board) -> ZipList Player -> ZipList Player
+updatePlayerBoard fn players =
+    ZipList.mapSelected
+        (\player -> { player | board = fn player.board })
+        players
 
 
 updateSelection : Selection -> Model -> Model
 updateSelection selection model =
     let
-        newBoard =
-            selectLocation selection model.board
+        newModel =
+            { model | players = updatePlayerBoard (ZipList.update selection) model.players }
     in
     case selection of
         AnswerAt _ Pass ->
-            { model
-                | board = newBoard |> ZipList.next
+            { newModel
+                | players = updatePlayerBoard ZipList.next newModel.players
                 , streak = model.streak + 1
             }
 
         AnswerAt _ Fail ->
-            { model
-                | board = newBoard
-                , streak = 0
+            { newModel
+                | streak = 0
             }
 
         QuestionAt _ _ ->
-            { model | board = newBoard }
+            newModel
 
         LoadingAt _ ->
-            { model | board = newBoard }
+            newModel
 
         NotSelected ->
-            model
+            newModel
 
 
 updateRandomSelection : RandomSelection -> Location -> Model -> Model
@@ -162,14 +160,21 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         currentSelection =
-            getCurrentSelection model.board
+            ZipList.selected model.players
+                |> .board
+                |> getCurrentSelection
     in
     case ( msg, currentSelection ) of
         ( Reset, _ ) ->
             init
 
-        ( Continue, AnswerAt _ Fail ) ->
-            ( { model | board = ZipList.next model.board }
+        ( NextPlayer, AnswerAt _ Fail ) ->
+            ( { model
+                | players =
+                    model.players
+                        |> updatePlayerBoard ZipList.next
+                        |> ZipList.loop
+              }
             , Cmd.none
             )
 
@@ -276,7 +281,7 @@ viewLocationTiles position selection =
         )
 
 
-viewBoard : Player r -> Html Msg
+viewBoard : Player -> Html Msg
 viewBoard { playerName, board } =
     div [ class "active-player" ]
         [ h2 [ class "player-name" ] [ text playerName ]
@@ -291,7 +296,22 @@ viewBoard { playerName, board } =
 -- Mini Board
 
 
-viewMiniBoard : Player r -> Html Msg
+viewMiniBoards : ZipList Player -> Html Msg
+viewMiniBoards players =
+    players
+        |> (ZipList.mapWithPosition <|
+                \position player ->
+                    if position /= ZipList.Selected then
+                        viewMiniBoard player
+
+                    else
+                        div [] []
+           )
+        |> ZipList.toList
+        |> div [ class "other-players" ]
+
+
+viewMiniBoard : Player -> Html Msg
 viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
         [ h2 [ class "player-name" ] [ text playerName ]
@@ -317,8 +337,8 @@ viewQuestionControls currentSelection =
             ]
 
         AnswerAt _ Fail ->
-            [ span [ class "label" ] [ text "Game Over:" ]
-            , viewButton Continue "btn-continue" "Continue"
+            [ span [ class "label" ] [ text "Oops:" ]
+            , viewButton NextPlayer "btn-next-player" "Next Player"
             ]
 
         NotSelected ->
@@ -333,16 +353,14 @@ viewQuestionControls currentSelection =
             []
 
 
-viewResetControl : Board -> List (Html Msg)
-viewResetControl board =
-    if ZipList.before board == [] && ZipList.selected board == NotSelected then
-        [ a [ class "btn btn-disabled" ] [ text "Reset" ] ]
-
-    else
-        [ viewButton Reset "btn-reset" "Reset" ]
+viewResetControl : List (Html Msg)
+viewResetControl =
+    [ span [ class "spacer" ] []
+    , viewButton Reset "btn-reset" "Reset"
+    ]
 
 
-viewControls : Player r -> Html Msg
+viewControls : Player -> Html Msg
 viewControls { board } =
     let
         currentSelection =
@@ -350,16 +368,19 @@ viewControls { board } =
     in
     div [ class "controls" ]
         (viewQuestionControls currentSelection
-            ++ span [ class "spacer" ] []
-            :: viewResetControl board
+            ++ viewResetControl
         )
 
 
-view : Player r -> Html Msg
-view player =
+view : Model -> Html Msg
+view model =
+    let
+        player =
+            ZipList.selected model.players
+    in
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
         , viewBoard player
         , viewControls player
-        , viewMiniBoard player
+        , viewMiniBoards model.players
         ]
