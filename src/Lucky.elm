@@ -1,9 +1,8 @@
 module Lucky exposing (Model, Msg, init, update, view)
 
-import Array exposing (Array)
 import Difficulty exposing (Difficulty)
 import Html exposing (Html, a, div, h1, h2, span, text)
-import Html.Attributes exposing (class, classList)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Random
 import ZipList exposing (ZipList)
@@ -24,8 +23,7 @@ type Answer
 
 
 type Tile
-    = Loading
-    | Question Question
+    = Question Question
     | Answer Answer
 
 
@@ -35,14 +33,15 @@ type Location
     | Bottom
 
 
-type alias Selection =
-    { location : Location
-    , tile : Tile
-    }
+type Selection
+    = NotSelected
+    | LoadingAt Location
+    | QuestionAt Location Question
+    | AnswerAt Location Answer
 
 
 type alias Board =
-    ZipList (Maybe Selection)
+    ZipList Selection
 
 
 type alias Player r =
@@ -63,7 +62,7 @@ type alias Model =
 initialModel : Model
 initialModel =
     { streak = 0
-    , board = ZipList.fromLists [] Nothing (List.repeat 8 Nothing)
+    , board = ZipList.fromLists [] NotSelected (List.repeat 8 NotSelected)
     , difficulty = Difficulty.fromInt 4
     , playerName = "Player 1"
     }
@@ -74,9 +73,9 @@ init =
     ( initialModel, Cmd.none )
 
 
-getCurrentSelection : Board -> Maybe Selection
-getCurrentSelection board =
-    ZipList.selected board
+getCurrentSelection : Board -> Selection
+getCurrentSelection =
+    ZipList.selected
 
 
 
@@ -112,52 +111,52 @@ type Msg
 
 
 clearLocation : Board -> Board
-clearLocation board =
-    ZipList.update Nothing board
+clearLocation =
+    ZipList.update NotSelected
 
 
 selectLocation : Selection -> Board -> Board
-selectLocation selection board =
-    ZipList.update (Just selection) board
+selectLocation selection =
+    ZipList.update selection
 
 
-updateStreak : Tile -> Int -> Int
-updateStreak tile streak =
-    case tile of
-        Answer Pass ->
-            streak + 1
-
-        Answer Fail ->
-            0
-
-        _ ->
-            streak
-
-
-updateNewTile : Location -> Tile -> Model -> Model
-updateNewTile location tile model =
+updateSelection : Selection -> Model -> Model
+updateSelection selection model =
     let
         newBoard =
-            selectLocation (Selection location tile) model.board
+            selectLocation selection model.board
     in
-    case tile of
-        Answer Pass ->
+    case selection of
+        AnswerAt _ Pass ->
             { model
                 | board = newBoard |> ZipList.next
                 , streak = model.streak + 1
             }
 
-        Answer Fail ->
+        AnswerAt _ Fail ->
             { model
                 | board = newBoard
                 , streak = 0
             }
 
-        Question _ ->
+        QuestionAt _ _ ->
             { model | board = newBoard }
 
-        Loading ->
+        LoadingAt _ ->
             { model | board = newBoard }
+
+        NotSelected ->
+            model
+
+
+updateNewTile : Tile -> Location -> Model -> Model
+updateNewTile tile location model =
+    case tile of
+        Question question ->
+            updateSelection (QuestionAt location question) model
+
+        Answer answer ->
+            updateSelection (AnswerAt location answer) model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -170,32 +169,28 @@ update msg model =
         ( Reset, _ ) ->
             init
 
-        -- Should only be when (tile == Answer Fail)
-        ( TryAgain, _ ) ->
+        ( TryAgain, AnswerAt _ Fail ) ->
             ( { model | board = clearLocation model.board }
             , Cmd.none
             )
 
-        ( Select location, Nothing ) ->
-            ( updateNewTile location Loading model
+        ( Select location, NotSelected ) ->
+            ( updateSelection (LoadingAt location) model
             , newTile model.difficulty model.streak
             )
 
-        -- Should only be when (tile == Question _)
-        ( AnswerWrong, Just { location } ) ->
-            ( updateNewTile location (Answer Fail) model
+        ( AnswerWrong, QuestionAt location _ ) ->
+            ( updateSelection (AnswerAt location Fail) model
             , Cmd.none
             )
 
-        -- Should only be when (tile == Question _)
-        ( AnswerCorrect, Just { location } ) ->
-            ( updateNewTile location (Answer Pass) model
+        ( AnswerCorrect, QuestionAt location _ ) ->
+            ( updateSelection (AnswerAt location Pass) model
             , Cmd.none
             )
 
-        -- Should only be when (tile == Loading)
-        ( NewTile tile, Just { location } ) ->
-            ( updateNewTile location tile model
+        ( NewTile tile, LoadingAt location ) ->
+            ( updateNewTile tile location model
             , Cmd.none
             )
 
@@ -208,134 +203,91 @@ update msg model =
 --- VIEW
 
 
-tileToString : Maybe Tile -> String
-tileToString tile =
-    case tile of
-        Just (Question Single) ->
-            "Q"
+selectionLocation : Selection -> Maybe Location
+selectionLocation selection =
+    case selection of
+        NotSelected ->
+            Nothing
 
-        Just (Question Team) ->
-            "QQ"
+        QuestionAt location _ ->
+            Just location
 
-        Just (Answer Pass) ->
-            ">>>"
+        AnswerAt location _ ->
+            Just location
 
-        Just (Answer Fail) ->
-            "❌"
-
-        Just Loading ->
-            ""
-
-        Nothing ->
-            "?"
+        LoadingAt location ->
+            Just location
 
 
-tileToClass : Maybe Tile -> String
-tileToClass tile =
-    case tile of
-        Just (Question Single) ->
-            "tile-question"
-
-        Just (Question Team) ->
-            "tile-question"
-
-        Just (Answer Pass) ->
-            "tile-pass"
-
-        Just (Answer Fail) ->
-            "tile-fail"
-
-        Just Loading ->
-            "tile-loading"
-
-        Nothing ->
-            "tile-blank"
+viewTile : String -> String -> Html Msg
+viewTile class_ label =
+    div [ class "tile", class class_ ] [ text label ]
 
 
-viewTile : Maybe Tile -> Html Msg
-viewTile tile =
-    div [ class "tile", class (tileToClass tile) ]
-        [ text (tileToString tile) ]
+viewBlankTile : Html Msg
+viewBlankTile =
+    viewTile "tile-blank" "?"
 
 
-viewTileWithAction : Location -> Maybe Tile -> Html Msg
-viewTileWithAction location tile =
+viewActionTile : Location -> Html Msg
+viewActionTile location =
     div
-        [ class "tile tile-action"
-        , class (tileToClass tile)
+        [ class "tile tile-action tile-blank"
         , onClick (Select location)
         ]
-        [ text (tileToString tile) ]
+        [ text "?" ]
 
 
-filterSelectionByLocation : Location -> Selection -> Maybe Selection
-filterSelectionByLocation currentLocation selection =
-    if currentLocation == selection.location then
-        Just selection
+viewSelection : Selection -> Html Msg
+viewSelection selection =
+    case selection of
+        LoadingAt _ ->
+            viewTile "tile-loading" "~"
+
+        QuestionAt _ Single ->
+            viewTile "tile-question" "Q"
+
+        QuestionAt _ Team ->
+            viewTile "tile-question" "QQ"
+
+        AnswerAt _ Pass ->
+            viewTile "tile-pass" ">>"
+
+        AnswerAt _ Fail ->
+            viewTile "tile-fail" "X"
+
+        NotSelected ->
+            viewBlankTile
+
+
+viewSelectionAtLocation : Selection -> Location -> Html Msg
+viewSelectionAtLocation selection location =
+    if Just location == selectionLocation selection then
+        viewSelection selection
 
     else
-        Nothing
+        viewSelection NotSelected
 
 
-viewTileLocation : (Maybe Tile -> Html Msg) -> Location -> Maybe Selection -> Html Msg
-viewTileLocation viewer currentLocation selection =
-    selection
-        |> Maybe.andThen (filterSelectionByLocation currentLocation)
-        |> Maybe.map .tile
-        |> viewer
+viewLocationTiles : ZipList.Position -> Selection -> Html Msg
+viewLocationTiles position selection =
+    div [ class "location" ]
+        ([ Top, Middle, Bottom ]
+            |> (if position == ZipList.Selected && selection == NotSelected then
+                    List.map viewActionTile
 
-
-selectionIsQuestion : Selection -> Bool
-selectionIsQuestion { tile } =
-    case tile of
-        Question _ ->
-            True
-
-        _ ->
-            False
-
-
-selectionIsFail : Selection -> Bool
-selectionIsFail { tile } =
-    tile == Answer Fail
-
-
-canSelectLocation : Maybe Selection -> ZipList.Position -> Bool
-canSelectLocation currentSelection position =
-    currentSelection == Nothing && position == ZipList.Selected
-
-
-viewLocationTiles : Bool -> Maybe Selection -> Html Msg
-viewLocationTiles active selection =
-    let
-        viewer =
-            if active then
-                \location -> viewTileLocation (viewTileWithAction location) location selection
-
-            else
-                \location -> viewTileLocation viewTile location selection
-    in
-    [ Top, Middle, Bottom ]
-        |> List.map viewer
-        |> div [ classList [ ( "location", True ), ( "location-active", active ) ] ]
+                else
+                    List.map (viewSelectionAtLocation selection)
+               )
+        )
 
 
 viewBoard : Player r -> Html Msg
 viewBoard { playerName, board } =
-    let
-        currentSelection =
-            getCurrentSelection board
-
-        currentCanSelectLocation =
-            canSelectLocation currentSelection
-    in
     div [ class "active-player" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
-            |> ZipList.mapWithPosition
-                (\position selection ->
-                    viewLocationTiles (currentCanSelectLocation position) selection
-                )
+            |> ZipList.mapWithPosition viewLocationTiles
             |> ZipList.toList
             |> div [ class "board" ]
         ]
@@ -345,65 +297,55 @@ viewBoard { playerName, board } =
 -- Mini Board
 
 
-viewLocation : Maybe Selection -> Html Msg
-viewLocation selection =
-    div [ class "location" ]
-        [ selection |> Maybe.map .tile |> viewTile ]
-
-
 viewMiniBoard : Player r -> Html Msg
 viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
         [ h2 [ class "player-name" ] [ text playerName ]
         , board
-            |> ZipList.map viewLocation
+            |> ZipList.map viewSelection
             |> ZipList.toList
             |> div [ class "board" ]
         ]
 
 
-viewQuestionControls : Maybe Selection -> List (Html Msg)
+viewButton : Msg -> String -> String -> Html Msg
+viewButton action class_ label =
+    a [ class "btn", class class_, onClick action ] [ text label ]
+
+
+viewQuestionControls : Selection -> List (Html Msg)
 viewQuestionControls currentSelection =
-    if
-        currentSelection
-            |> Maybe.map selectionIsQuestion
-            |> Maybe.withDefault False
-    then
-        -- Answer Question
-        [ span [ class "label" ] [ text "Answer:" ]
-        , a [ class "btn btn-pass", onClick AnswerCorrect ] [ text "Correct" ]
-        , a [ class "btn btn-fail", onClick AnswerWrong ] [ text "Wrong" ]
-        ]
+    case currentSelection of
+        QuestionAt _ _ ->
+            [ span [ class "label" ] [ text "Answer:" ]
+            , viewButton AnswerCorrect "btn-pass" "Correct"
+            , viewButton AnswerWrong "btn-fail" "Wrong"
+            ]
 
-    else if
-        currentSelection
-            |> Maybe.map selectionIsFail
-            |> Maybe.withDefault False
-    then
-        [ span [ class "label" ] [ text "Game Over:" ]
-        , a [ class "btn btn-try-again", onClick TryAgain ] [ text "Try Again" ]
-        ]
+        AnswerAt _ Fail ->
+            [ span [ class "label" ] [ text "Game Over:" ]
+            , viewButton TryAgain "btn-try-again" "Try Again"
+            ]
 
-    else if currentSelection == Nothing then
-        -- Choose Location
-        [ span [ class "label" ] [ text "Choose:" ]
-        , a [ class "btn btn-location btn-top", onClick (Select Top) ] [ text "Top" ]
-        , a [ class "btn btn-location btn-middle", onClick (Select Middle) ] [ text "Middle" ]
-        , a [ class "btn btn-location btn-bottom", onClick (Select Bottom) ] [ text "Bottom" ]
-        ]
+        NotSelected ->
+            [ span [ class "label" ] [ text "Choose:" ]
+            , viewButton (Select Top) "btn-location btn-top" "Top"
+            , viewButton (Select Middle) "btn-location btn-middle" "Middle"
+            , viewButton (Select Bottom) "btn-location btn-bottom" "Bottom"
+            ]
 
-    else
-        -- Game Complete
-        []
+        -- Game Complete or Selection Loading
+        _ ->
+            []
 
 
 viewResetControl : Board -> List (Html Msg)
 viewResetControl board =
-    if ZipList.before board == [] && ZipList.selected board == Nothing then
+    if ZipList.before board == [] && ZipList.selected board == NotSelected then
         [ a [ class "btn btn-disabled" ] [ text "Reset" ] ]
 
     else
-        [ a [ class "btn btn-reset", onClick Reset ] [ text "Reset" ] ]
+        [ viewButton Reset "btn-reset" "Reset" ]
 
 
 viewControls : Player r -> Html Msg
