@@ -136,28 +136,28 @@ updateStreak tile streak =
 
 updateNewTile : Location -> Tile -> Model -> Model
 updateNewTile location tile model =
+    let
+        newBoard =
+            selectLocation (Selection location tile) model.board
+    in
     case tile of
         Answer Pass ->
             { model
-                | board = selectLocation (Selection location tile) model.board |> ZipList.next
+                | board = newBoard |> ZipList.next
                 , streak = model.streak + 1
             }
 
         Answer Fail ->
             { model
-                | board = selectLocation (Selection location tile) model.board
+                | board = newBoard
                 , streak = 0
             }
 
         Question _ ->
-            { model
-                | board = selectLocation (Selection location tile) model.board
-            }
+            { model | board = newBoard }
 
         Loading ->
-            { model
-                | board = selectLocation (Selection location tile) model.board
-            }
+            { model | board = newBoard }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
