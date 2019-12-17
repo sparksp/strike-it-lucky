@@ -105,7 +105,7 @@ type Msg
     = Select Location
     | NewRandomSelection RandomSelection
     | Answer Answer
-    | TryAgain
+    | Continue
     | Reset
 
 
@@ -168,8 +168,8 @@ update msg model =
         ( Reset, _ ) ->
             init
 
-        ( TryAgain, AnswerAt _ Fail ) ->
-            ( { model | board = clearLocation model.board }
+        ( Continue, AnswerAt _ Fail ) ->
+            ( { model | board = ZipList.next model.board }
             , Cmd.none
             )
 
@@ -318,7 +318,7 @@ viewQuestionControls currentSelection =
 
         AnswerAt _ Fail ->
             [ span [ class "label" ] [ text "Game Over:" ]
-            , viewButton TryAgain "btn-try-again" "Try Again"
+            , viewButton Continue "btn-continue" "Continue"
             ]
 
         NotSelected ->
