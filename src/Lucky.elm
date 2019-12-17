@@ -24,7 +24,6 @@ type Answer
 
 type Tile
     = Loading
-    | HotSpot
     | Question Question
     | Answer Answer
 
@@ -92,7 +91,7 @@ randomTile difficulty streak =
     Random.weighted
         ( 15, Question Single )
         [ ( 4, Question Team )
-        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), HotSpot )
+        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), Answer Fail )
         , ( 4, Answer Pass )
         ]
 
@@ -142,9 +141,6 @@ updateStreak tile streak =
             streak + 1
 
         Answer Fail ->
-            0
-
-        HotSpot ->
             0
 
         _ ->
@@ -219,9 +215,6 @@ tileToString tile =
         Just (Question Team) ->
             "QQ"
 
-        Just HotSpot ->
-            "🔥"
-
         Just (Answer Pass) ->
             ">>>"
 
@@ -243,9 +236,6 @@ tileToClass tile =
 
         Just (Question Team) ->
             "tile-question"
-
-        Just HotSpot ->
-            "tile-fail"
 
         Just (Answer Pass) ->
             "tile-pass"
@@ -305,15 +295,7 @@ selectionIsQuestion { tile } =
 
 selectionIsFail : Selection -> Bool
 selectionIsFail { tile } =
-    case tile of
-        Answer Fail ->
-            True
-
-        HotSpot ->
-            True
-
-        _ ->
-            False
+    tile == Answer Fail
 
 
 canSelectLocation : Maybe Selection -> Int -> Int -> Bool
