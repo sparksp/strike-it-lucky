@@ -1,7 +1,7 @@
 module Lucky exposing (Model, Msg, init, update, view)
 
 import Difficulty exposing (Difficulty)
-import Html exposing (Html, a, div, h1, h2, span, text)
+import Html exposing (Html, a, div, h1, h2, h3, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Lucky.Settings exposing (Settings)
@@ -331,7 +331,7 @@ viewMiniBoards players =
 viewMiniBoard : Player -> Html Msg
 viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
-        [ h2 [ class "player-name" ] [ text playerName ]
+        [ h3 [ class "player-name" ] [ text playerName ]
         , board
             |> ZipList.map viewSelection
             |> ZipList.toList
