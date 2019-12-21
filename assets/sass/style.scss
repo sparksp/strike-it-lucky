@@ -16,6 +16,56 @@ h1 {
   text-align: center;
 }
 
+.setup {
+  margin: 0 15vw;
+}
+
+.form-input-group {
+  display: flex;
+  margin: 0.25em 0;
+}
+.form-input {
+  width: 100%;
+}
+.form-label {
+  width: 100%;
+  display: block;
+  font-weight: bold;
+  margin: 0.5em 0 0.25em;
+}
+.form-list {
+  margin-top: 0;
+}
+.form-range-label {
+  margin: 0 0.25em;
+}
+.form-input-text {
+  border: 1px solid #000000;
+  display: inline-block;
+  color: #000000;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+.form-input + .form-btn {
+  border-left: none;
+}
+.form-controls {
+  margin: 1em 0;
+  display: flex;
+}
+.form-controls .form-btn {
+  display: inline-block;
+  font-weight: bold;
+  margin-left: 0.5em;
+}
+.form-controls .spacer {
+  flex-grow: 1;
+}
+.form-controls :first-child {
+  margin-left: 0;
+}
+
+
 .board {
   display: grid;
   grid-auto-flow: column;
