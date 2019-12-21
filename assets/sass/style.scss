@@ -1,143 +1,144 @@
 @import "normalize.css";
 
-$font-stack:    Helvetica, sans-serif;
+$font-stack: Helvetica, sans-serif;
 $primary-color: #333;
 
 body {
-    font: 100% $font-stack;
-    color: $primary-color;
+  font: 100% $font-stack;
+  color: $primary-color;
 }
 
 .main {
-    margin: 1vw;
+  margin: 1vw;
 }
 
 h1 {
-    text-align: center;
+  text-align: center;
 }
 
 .board {
-    display: grid;
-    grid-auto-flow: column;
-    grid-template-rows: 1fr;
-    grid-template-columns: repeat(auto-fit, minmax(1px, 1fr));
-    grid-column-gap: 1vw;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(1px, 1fr));
+  grid-column-gap: 1vw;
 }
 
 .location {
-    color: grey;
-    display: grid;
-    grid-row-gap: 1vw;
+  color: grey;
+  display: grid;
+  grid-row-gap: 1vw;
 }
 
 .tile {
-    background-color: white;
-    border: 1px solid black;
-    border-radius: 3px;
-    text-align: center;
-    height: 0;
-    padding-top: 10%;
-    padding-bottom: 70%;
-    font-size: 5vw;
+  background-color: white;
+  border: 1px solid black;
+  border-radius: 3px;
+  text-align: center;
+  height: 0;
+  padding-top: 10%;
+  padding-bottom: 70%;
+  font-size: 5vw;
 }
 
 .tile-action {
-    cursor: pointer;
-    color: black;
+  cursor: pointer;
+  color: black;
 
-    &:hover {
-        background-color: #eee;
-    }    
+  &:hover {
+    background-color: #eee;
+  }
 }
-
 
 .tile-pass {
-    background-color: lightgreen;
-    color: black;
+  background-color: lightgreen;
+  color: black;
 }
 
-.tile-fail, .tile-hotspot {
-    background-color: lightsalmon;
-    color: black;
+.tile-fail,
+.tile-hotspot {
+  background-color: lightsalmon;
+  color: black;
 }
 
 .tile-question {
-    background-color: lightskyblue;
-    color: black;
+  background-color: lightskyblue;
+  color: black;
 }
 
 .tile-loading {
-    background-color: lightyellow;
-    color: black;
+  background-color: lightyellow;
+  color: black;
 }
 
 .btn {
-	border:1px solid #000000;
-	display:inline-block;
-	cursor:pointer;
-    color:#000000;
-    padding:6px 12px;
-    text-decoration:none;
-    text-align: center;
+  border: 1px solid #000000;
+  display: inline-block;
+  cursor: pointer;
+  color: #000000;
+  padding: 6px 12px;
+  text-decoration: none;
+  text-align: center;
 
-    &:hover {
-        background-color:#eee;
-    }
-    &:active {
-        position:relative;
-        top:1px;
-    }   
+  &:hover {
+    background-color: #eee;
+  }
+  &:active {
+    position: relative;
+    top: 1px;
+  }
 }
 
 .btn-pass {
-	background-color:#74ad5a;
-	border:1px solid #3b6e22;
-	color:#ffffff;
+  background-color: #74ad5a;
+  border: 1px solid #3b6e22;
+  color: #ffffff;
 
-    &:hover {
-        background-color:#68a54b;
-    }
+  &:hover {
+    background-color: #68a54b;
+  }
 }
 
 .btn-fail {
-	background-color:#d0451b;
-	border:1px solid #942911;
-	color:#ffffff;
+  background-color: #d0451b;
+  border: 1px solid #942911;
+  color: #ffffff;
 
-    &:hover {
-        background-color:#bc3315;
-    }
+  &:hover {
+    background-color: #bc3315;
+  }
 }
 
 .btn-disabled {
-    cursor: default;
-    color: grey;
+  cursor: default;
+  color: grey;
 
-    &:hover {
-        background: none;
-    }
-    &:active {
-        top: 0;
-    }
+  &:hover {
+    background: none;
+  }
+  &:active {
+    top: 0;
+  }
 }
 
 .controls {
-    margin: 1em 0;
-    display: flex;
+  margin: 1em 0;
+  display: flex;
 }
 .controls .spacer {
-    flex-grow: 1;
+  flex-grow: 1;
 }
 
-.controls .btn, .controls .label {
-    display:inline-block;
-    font-family:Arial;
-	font-size:16pt;
-    font-weight:bold;
-    margin-left: .5em;
-    padding-top: 6px;
+.controls .btn,
+.controls .label {
+  display: inline-block;
+  font-family: Arial;
+  font-size: 16pt;
+  font-weight: bold;
+  margin-left: 0.5em;
+  padding-top: 6px;
 }
 
 .controls :first-child {
-    margin-left: 0
+  margin-left: 0;
 }
