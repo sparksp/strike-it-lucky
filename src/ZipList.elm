@@ -1,6 +1,6 @@
 module ZipList exposing
     ( ZipList, fromLists, singleton
-    , toList, before, selected, after
+    , toList, before, selected, after, length
     , next, loop, rewind, select
     , map, mapSelected, mapWithPosition, Position(..), append, prepend, update
     )
@@ -11,7 +11,7 @@ module ZipList exposing
 
 # Reading
 
-@docs toList, before, selected, after
+@docs toList, before, selected, after, length
 
 
 # Traversal
@@ -106,6 +106,20 @@ selected (ZipList list) =
 after : ZipList a -> List a
 after (ZipList list) =
     list.remaining
+
+
+{-| the count of all items
+
+    .fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+        |> .length
+        == 6
+
+-}
+length : ZipList a -> Int
+length (ZipList list) =
+    1
+        + List.length list.previous
+        + List.length list.remaining
 
 
 {-| transform each element of the list

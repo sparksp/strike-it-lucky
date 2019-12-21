@@ -344,8 +344,8 @@ viewButton action class_ label =
     a [ class "btn", class class_, onClick action ] [ text label ]
 
 
-viewQuestionControls : Selection -> List (Html Msg)
-viewQuestionControls currentSelection =
+viewQuestionControls : Selection -> Int -> List (Html Msg)
+viewQuestionControls currentSelection playerCount =
     case currentSelection of
         QuestionAt _ _ ->
             [ span [ class "label" ] [ text "Answer:" ]
@@ -354,8 +354,16 @@ viewQuestionControls currentSelection =
             ]
 
         AnswerAt _ Fail ->
+            let
+                label =
+                    if playerCount > 1 then
+                        "Next Player"
+
+                    else
+                        "Try Again"
+            in
             [ span [ class "label" ] [ text "Oops:" ]
-            , viewButton NextPlayer "btn-next-player" "Next Player"
+            , viewButton NextPlayer "btn-next-player" label
             ]
 
         NotSelected ->
@@ -377,14 +385,14 @@ viewResetControl =
     ]
 
 
-viewControls : Player -> Html Msg
-viewControls { board } =
+viewControls : Player -> Int -> Html Msg
+viewControls { board } playerCount =
     let
         currentSelection =
             ZipList.selected board
     in
     div [ class "controls" ]
-        (viewQuestionControls currentSelection
+        (viewQuestionControls currentSelection playerCount
             ++ viewResetControl
         )
 
@@ -394,10 +402,13 @@ view model =
     let
         player =
             ZipList.selected model.players
+
+        playerCount =
+            ZipList.length model.players
     in
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
         , viewBoard player
-        , viewControls player
+        , viewControls player playerCount
         , viewMiniBoards model.players
         ]

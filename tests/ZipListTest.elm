@@ -61,6 +61,18 @@ suite =
                         |> ZipList.toList
                         |> Expect.equal [ 1, 2, 3, 4, 5, 6 ]
             ]
+        , describe "length"
+            [ test "is the count of all items" <|
+                \_ ->
+                    ZipList.fromLists [ 1, 2 ] 3 [ 4, 5, 6 ]
+                        |> ZipList.length
+                        |> Expect.equal 6
+            , test "with a singleton, is 1" <|
+                \_ ->
+                    ZipList.singleton 3
+                        |> ZipList.length
+                        |> Expect.equal 1
+            ]
         , describe "map"
             [ test "transforms each element of the list" <|
                 \_ ->
