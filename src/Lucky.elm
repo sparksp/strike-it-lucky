@@ -75,11 +75,6 @@ init =
     ( initialModel, Cmd.none )
 
 
-getCurrentSelection : Board -> Selection
-getCurrentSelection =
-    ZipList.selected
-
-
 
 --- COMMANDS
 
@@ -162,7 +157,7 @@ update msg model =
         currentSelection =
             ZipList.selected model.players
                 |> .board
-                |> getCurrentSelection
+                |> ZipList.selected
     in
     case ( msg, currentSelection ) of
         ( Reset, _ ) ->
@@ -364,7 +359,7 @@ viewControls : Player -> Html Msg
 viewControls { board } =
     let
         currentSelection =
-            getCurrentSelection board
+            ZipList.selected board
     in
     div [ class "controls" ]
         (viewQuestionControls currentSelection
