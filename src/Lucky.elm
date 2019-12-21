@@ -4,6 +4,7 @@ import Difficulty exposing (Difficulty)
 import Html exposing (Html, a, div, h1, h2, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Lucky.Settings exposing (Settings)
 import Random
 import ZipList exposing (ZipList)
 
@@ -62,17 +63,38 @@ initBoard =
     ZipList.fromLists [] NotSelected (List.repeat 8 NotSelected)
 
 
-initialModel : Model
-initialModel =
-    { difficulty = Difficulty.fromInt 4
+initPlayer : String -> Player
+initPlayer =
+    Player initBoard
+
+
+initialModel : Settings -> Model
+initialModel { difficulty, playerName, morePlayerNames } =
+    { difficulty = difficulty
     , streak = 0
-    , players = ZipList.fromLists [] (Player initBoard "Player 1") [ Player initBoard "Player 2" ]
+    , players =
+        ZipList.fromLists []
+            (initPlayer playerName)
+            (List.map initPlayer morePlayerNames)
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( initialModel, Cmd.none )
+init : Settings -> ( Model, Cmd Msg )
+init settings =
+    ( initialModel settings, Cmd.none )
+
+
+resetPlayer : Player -> Player
+resetPlayer player =
+    { player | board = initBoard }
+
+
+reset : Model -> Model
+reset model =
+    { model
+        | streak = 0
+        , players = model.players |> ZipList.map resetPlayer |> ZipList.rewind
+    }
 
 
 
@@ -161,7 +183,7 @@ update msg model =
     in
     case ( msg, currentSelection ) of
         ( Reset, _ ) ->
-            init
+            ( reset model, Cmd.none )
 
         ( NextPlayer, AnswerAt _ Fail ) ->
             ( { model

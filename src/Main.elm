@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (Document)
+import Difficulty
 import Html
 import Lucky
 
@@ -18,6 +19,10 @@ init () =
     let
         ( luckyModel, cmd ) =
             Lucky.init
+                { difficulty = Difficulty.min
+                , playerName = "Player 1"
+                , morePlayerNames = [ "Player 2" ]
+                }
     in
     ( { page = Lucky luckyModel }, Cmd.map LuckyMsg cmd )
 
