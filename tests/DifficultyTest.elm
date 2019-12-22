@@ -1,10 +1,10 @@
 module DifficultyTest exposing (suite)
 
-import Difficulty exposing (Difficulty)
-import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, intRange)
+import Difficulty
+import Expect
+import Fuzz exposing (intRange)
 import Random exposing (maxInt, minInt)
-import Test exposing (..)
+import Test exposing (Test, describe, fuzz, test)
 
 
 suite : Test
@@ -23,13 +23,13 @@ suite =
                     Difficulty.fromInt 0
                         |> Expect.equal Difficulty.min
             , fuzz (intRange minInt -1)
-                "Difficulty cannot be negative"
+                "with a value less than 1, it returns the minimum"
               <|
                 \n ->
                     Difficulty.fromInt n
                         |> Expect.equal Difficulty.min
             , fuzz (intRange 11 maxInt)
-                "Difficulty cannot be greater than 10"
+                "with a value more than 10, it returns the maximum"
               <|
                 \n ->
                     Difficulty.fromInt n
