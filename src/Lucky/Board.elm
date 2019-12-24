@@ -1,4 +1,4 @@
-module Board exposing
+module Lucky.Board exposing
     ( Answer(..)
     , Answered(..)
     , Board

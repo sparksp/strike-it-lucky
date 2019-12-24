@@ -1,10 +1,10 @@
 module Lucky exposing (Model, Msg, init, update, view)
 
-import Board exposing (Board)
 import Difficulty exposing (Difficulty)
 import Html exposing (Html, a, div, h1, h2, h3, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Lucky.Board as Board exposing (Board)
 import Lucky.Settings exposing (Settings)
 import Random
 import ZipList exposing (ZipList)

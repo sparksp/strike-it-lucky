@@ -1,7 +1,7 @@
-module BoardTest exposing (suite)
+module Lucky.BoardTest exposing (suite)
 
-import Board
 import Expect
+import Lucky.Board as Board
 import Test exposing (Test, describe, test)
 
 
