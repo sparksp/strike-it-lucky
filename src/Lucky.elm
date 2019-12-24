@@ -1,5 +1,6 @@
 module Lucky exposing (Model, Msg, init, update, view)
 
+import Board exposing (Board)
 import Difficulty exposing (Difficulty)
 import Html exposing (Html, a, div, h1, h2, h3, span, text)
 import Html.Attributes exposing (class)
@@ -13,36 +14,9 @@ import ZipList exposing (ZipList)
 --- MODEL
 
 
-type Question
-    = Single
-    | Team
-
-
-type Answer
-    = Pass
-    | Fail
-
-
 type RandomSelection
-    = RandomQuestion Question
-    | RandomAnswer Answer
-
-
-type Location
-    = Top
-    | Middle
-    | Bottom
-
-
-type Selection
-    = NotSelected
-    | LoadingAt Location
-    | QuestionAt Location Question
-    | AnswerAt Location Answer
-
-
-type alias Board =
-    ZipList Selection
+    = RandomQuestion Board.Question
+    | RandomAnswer Board.Answer
 
 
 type alias Player =
@@ -58,14 +32,9 @@ type alias Model =
     }
 
 
-initBoard : Board
-initBoard =
-    ZipList.fromLists [] NotSelected (List.repeat 8 NotSelected)
-
-
 initPlayer : String -> Player
 initPlayer =
-    Player initBoard
+    Player Board.new
 
 
 initialModel : Settings -> Model
@@ -86,7 +55,7 @@ init settings =
 
 resetPlayer : Player -> Player
 resetPlayer player =
-    { player | board = initBoard }
+    { player | board = Board.new }
 
 
 reset : Model -> Model
@@ -104,10 +73,10 @@ reset model =
 randomSelection : Difficulty -> Int -> Random.Generator RandomSelection
 randomSelection difficulty streak =
     Random.weighted
-        ( 15, RandomQuestion Single )
-        [ ( 4, RandomQuestion Team )
-        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), RandomAnswer Fail )
-        , ( 4, RandomAnswer Pass )
+        ( 15, RandomQuestion Board.Single )
+        [ ( 4, RandomQuestion Board.Team )
+        , ( toFloat ((Difficulty.toInt difficulty * streak) + 2), RandomAnswer Board.Fail )
+        , ( 4, RandomAnswer Board.Pass )
         ]
 
 
@@ -121,10 +90,10 @@ newTile difficulty streak =
 
 
 type Msg
-    = Select Location
+    = Select Board.Location
     | NewRandomSelection RandomSelection
-    | Answer Answer
-    | NextPlayer
+    | Answer Board.Answer
+    | FinalAnswer Board.Answer
     | Reset
 
 
@@ -135,103 +104,95 @@ updatePlayerBoard fn players =
         players
 
 
-updateSelection : Selection -> Model -> Model
-updateSelection selection model =
-    let
-        newModel =
-            { model | players = updatePlayerBoard (ZipList.update selection) model.players }
-    in
-    case selection of
-        AnswerAt _ Pass ->
-            { newModel
-                | players = updatePlayerBoard ZipList.next newModel.players
-                , streak = model.streak + 1
-            }
-
-        AnswerAt _ Fail ->
-            { newModel
-                | streak = 0
-            }
-
-        QuestionAt _ _ ->
-            newModel
-
-        LoadingAt _ ->
-            newModel
-
-        NotSelected ->
-            newModel
+updateBoard : (Board -> Board) -> Model -> Model
+updateBoard fn model =
+    { model | players = updatePlayerBoard fn model.players }
 
 
-updateRandomSelection : RandomSelection -> Location -> Model -> Model
-updateRandomSelection selection location model =
+updateAnswer : Board.Answer -> Model -> Model
+updateAnswer answer model =
+    { model | players = updatePlayerBoard (Board.answer answer) model.players }
+        |> updateStreak answer
+        |> switchPlayer answer
+
+
+updateFinalAnswer : Board.Answer -> Model -> Model
+updateFinalAnswer answer model =
+    { model | players = updatePlayerBoard (Board.finalAnswer answer) model.players }
+        |> switchPlayer answer
+
+
+updateStreak : Board.Answer -> Model -> Model
+updateStreak answer model =
+    case answer of
+        Board.Fail ->
+            { model | streak = 0 }
+
+        Board.Pass ->
+            { model | streak = 1 + model.streak }
+
+
+switchPlayer : Board.Answer -> Model -> Model
+switchPlayer answer model =
+    case answer of
+        Board.Fail ->
+            { model | players = ZipList.loop model.players |> updatePlayerBoard Board.clearFinalAnswer }
+
+        Board.Pass ->
+            model
+
+
+updateRandomSelection : RandomSelection -> Model -> Model
+updateRandomSelection selection model =
     case selection of
         RandomQuestion question ->
-            updateSelection (QuestionAt location question) model
+            updateBoard (Board.question question) model
 
         RandomAnswer answer ->
-            updateSelection (AnswerAt location answer) model
+            updateAnswer answer model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        currentSelection =
-            ZipList.selected model.players
-                |> .board
-                |> ZipList.selected
-    in
-    case ( msg, currentSelection ) of
-        ( Reset, _ ) ->
+    case msg of
+        Reset ->
             ( reset model, Cmd.none )
 
-        ( NextPlayer, AnswerAt _ Fail ) ->
-            ( { model
-                | players =
-                    model.players
-                        |> updatePlayerBoard ZipList.next
-                        |> ZipList.loop
-              }
-            , Cmd.none
-            )
-
-        ( Select location, NotSelected ) ->
-            ( updateSelection (LoadingAt location) model
+        Select location ->
+            ( updateBoard (Board.loading location) model
             , newTile model.difficulty model.streak
             )
 
-        ( Answer answer, QuestionAt location _ ) ->
-            ( updateSelection (AnswerAt location answer) model
+        Answer answer ->
+            ( updateAnswer answer model
             , Cmd.none
             )
 
-        ( NewRandomSelection selection, LoadingAt location ) ->
-            ( updateRandomSelection selection location model
+        FinalAnswer answer ->
+            ( updateFinalAnswer answer model
             , Cmd.none
             )
 
-        -- Oops! Log this in dev?
-        ( _, _ ) ->
-            ( model, Cmd.none )
+        NewRandomSelection selection ->
+            ( updateRandomSelection selection model
+            , Cmd.none
+            )
 
 
 
 --- VIEW
 
 
-selectionLocation : Selection -> Maybe Location
+selectionLocation : Board.Selection -> Maybe Board.Location
 selectionLocation selection =
     case selection of
-        NotSelected ->
+        Board.NotSelected ->
             Nothing
 
-        QuestionAt location _ ->
+        Board.QuestionAt location _ ->
             Just location
 
-        AnswerAt location _ ->
-            Just location
-
-        LoadingAt location ->
+        Board.LoadingAt location ->
             Just location
 
 
@@ -245,7 +206,7 @@ viewBlankTile =
     viewTile "tile-blank" "?"
 
 
-viewActionTile : Location -> Html Msg
+viewActionTile : Board.Location -> Html Msg
 viewActionTile location =
     div
         [ class "tile tile-action tile-blank"
@@ -254,42 +215,36 @@ viewActionTile location =
         [ text "?" ]
 
 
-viewSelection : Selection -> Html Msg
+viewSelection : Board.Selection -> Html Msg
 viewSelection selection =
     case selection of
-        LoadingAt _ ->
+        Board.LoadingAt _ ->
             viewTile "tile-loading" "~"
 
-        QuestionAt _ Single ->
+        Board.QuestionAt _ Board.Single ->
             viewTile "tile-question" "Q"
 
-        QuestionAt _ Team ->
+        Board.QuestionAt _ Board.Team ->
             viewTile "tile-question" "QQ"
 
-        AnswerAt _ Pass ->
-            viewTile "tile-pass" ">>"
-
-        AnswerAt _ Fail ->
-            viewTile "tile-fail" "X"
-
-        NotSelected ->
+        Board.NotSelected ->
             viewBlankTile
 
 
-viewSelectionAtLocation : Selection -> Location -> Html Msg
+viewSelectionAtLocation : Board.Selection -> Board.Location -> Html Msg
 viewSelectionAtLocation selection location =
     if Just location == selectionLocation selection then
         viewSelection selection
 
     else
-        viewSelection NotSelected
+        viewSelection Board.NotSelected
 
 
-viewLocationTiles : ZipList.Position -> Selection -> Html Msg
-viewLocationTiles position selection =
+viewCurrentLocation : Board.Selection -> Html Msg
+viewCurrentLocation selection =
     div [ class "location" ]
-        ([ Top, Middle, Bottom ]
-            |> (if position == ZipList.Selected && selection == NotSelected then
+        ([ Board.Top, Board.Middle, Board.Bottom ]
+            |> (if selection == Board.NotSelected then
                     List.map viewActionTile
 
                 else
@@ -298,19 +253,105 @@ viewLocationTiles position selection =
         )
 
 
+viewAnswer : Board.Answer -> Html Msg
+viewAnswer answer =
+    case answer of
+        Board.Pass ->
+            viewTile "tile-answer tile-pass" "→"
+
+        Board.Fail ->
+            viewTile "tile-answer tile-fail" "X"
+
+
+viewAnswered : Board.Answered -> Html Msg
+viewAnswered (Board.AnswerAt _ answer) =
+    viewAnswer answer
+
+
+viewAnsweredAt : Board.Answered -> Board.Location -> Html Msg
+viewAnsweredAt (Board.AnswerAt answerLocation answer) location =
+    if answerLocation == location then
+        viewAnswer answer
+
+    else
+        viewBlankTile
+
+
+viewLocationAnswered : Board.Answered -> Html Msg
+viewLocationAnswered answered =
+    div [ class "location" ]
+        (List.map (viewAnsweredAt answered) [ Board.Top, Board.Middle, Board.Bottom ])
+
+
+viewBlankLocation : Html Msg
+viewBlankLocation =
+    div [ class "location" ]
+        (List.repeat 3 viewBlankTile)
+
+
+viewFinal : Board.FinalSelection -> Html Msg
+viewFinal selection =
+    case selection of
+        Board.FinalFuture ->
+            viewBlankTile
+
+        Board.FinalQuestion ->
+            viewTile "tile-question" "QQ"
+
+        Board.FinalAnswer Board.Pass ->
+            viewTile "tile-answer tile-pass" "✓"
+
+        Board.FinalAnswer answer ->
+            viewAnswer answer
+
+
+viewLocation : Board.Tile -> Html Msg
+viewLocation tile =
+    case tile of
+        Board.Answer answer ->
+            viewLocationAnswered answer
+
+        Board.Selection selection ->
+            viewCurrentLocation selection
+
+        Board.Future ->
+            viewBlankLocation
+
+        Board.Final final ->
+            div [ class "location" ]
+                [ div [ class "tile tile-spacer" ] []
+                , viewFinal final
+                , div [ class "tile tile-spacer" ] []
+                ]
+
+
 viewBoard : Player -> Html Msg
 viewBoard { playerName, board } =
     div [ class "active-player" ]
         [ h2 [ class "player-name" ] [ text playerName ]
-        , board
-            |> ZipList.mapWithPosition viewLocationTiles
-            |> ZipList.toList
-            |> div [ class "board" ]
+        , div [ class "board" ]
+            (Board.map viewLocation board)
         ]
 
 
 
 -- Mini Board
+
+
+viewMiniLocation : Board.Tile -> Html Msg
+viewMiniLocation tile =
+    case tile of
+        Board.Answer answer ->
+            viewAnswered answer
+
+        Board.Selection selection ->
+            viewSelection selection
+
+        Board.Future ->
+            viewBlankTile
+
+        Board.Final final ->
+            viewFinal final
 
 
 viewMiniBoards : ZipList Player -> Html Msg
@@ -332,10 +373,11 @@ viewMiniBoard : Player -> Html Msg
 viewMiniBoard { playerName, board } =
     div [ class "player mini-board" ]
         [ h3 [ class "player-name" ] [ text playerName ]
-        , board
-            |> ZipList.map viewSelection
-            |> ZipList.toList
-            |> div [ class "board" ]
+        , div [ class "board" ]
+            (List.map
+                (List.singleton >> div [ class "location" ])
+                (Board.map viewMiniLocation board)
+            )
         ]
 
 
@@ -344,36 +386,35 @@ viewButton action class_ label =
     a [ class "btn", class class_, onClick action ] [ text label ]
 
 
-viewQuestionControls : Selection -> Int -> List (Html Msg)
-viewQuestionControls currentSelection playerCount =
-    case currentSelection of
-        QuestionAt _ _ ->
+viewQuestionControls : Board.Tile -> List (Html Msg)
+viewQuestionControls tile =
+    case tile of
+        Board.Final Board.FinalQuestion ->
+            [ span [ class "label" ] [ text "Final Question:" ]
+            , viewButton (FinalAnswer Board.Pass) "btn-pass" "Correct"
+            , viewButton (FinalAnswer Board.Fail) "btn-fail" "Wrong"
+            ]
+
+        Board.Final (Board.FinalAnswer Board.Pass) ->
+            [ span [ class "label" ] [ text "Congratulations!" ] ]
+
+        Board.Selection (Board.QuestionAt _ _) ->
             [ span [ class "label" ] [ text "Answer:" ]
-            , viewButton (Answer Pass) "btn-pass" "Correct"
-            , viewButton (Answer Fail) "btn-fail" "Wrong"
+            , viewButton (Answer Board.Pass) "btn-pass" "Correct"
+            , viewButton (Answer Board.Fail) "btn-fail" "Wrong"
             ]
 
-        AnswerAt _ Fail ->
-            let
-                label =
-                    if playerCount > 1 then
-                        "Next Player"
-
-                    else
-                        "Try Again"
-            in
-            [ span [ class "label" ] [ text "Oops:" ]
-            , viewButton NextPlayer "btn-next-player" label
-            ]
-
-        NotSelected ->
+        Board.Selection Board.NotSelected ->
             [ span [ class "label" ] [ text "Choose:" ]
-            , viewButton (Select Top) "btn-location btn-top" "Top"
-            , viewButton (Select Middle) "btn-location btn-middle" "Middle"
-            , viewButton (Select Bottom) "btn-location btn-bottom" "Bottom"
+            , viewButton (Select Board.Top) "btn-location btn-top" "Top"
+            , viewButton (Select Board.Middle) "btn-location btn-middle" "Middle"
+            , viewButton (Select Board.Bottom) "btn-location btn-Bottom" "Bottom"
             ]
 
-        -- Game Complete or Selection Loading
+        Board.Selection (Board.LoadingAt _) ->
+            [ span [ class "label" ] [ text "Picking a question..." ] ]
+
+        -- Oops?
         _ ->
             []
 
@@ -385,14 +426,10 @@ viewResetControl =
     ]
 
 
-viewControls : Player -> Int -> Html Msg
-viewControls { board } playerCount =
-    let
-        currentSelection =
-            ZipList.selected board
-    in
+viewControls : Player -> Html Msg
+viewControls { board } =
     div [ class "controls" ]
-        (viewQuestionControls currentSelection playerCount
+        (viewQuestionControls (Board.selected board)
             ++ viewResetControl
         )
 
@@ -402,13 +439,10 @@ view model =
     let
         player =
             ZipList.selected model.players
-
-        playerCount =
-            ZipList.length model.players
     in
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
         , viewBoard player
-        , viewControls player playerCount
+        , viewControls player
         , viewMiniBoards model.players
         ]
