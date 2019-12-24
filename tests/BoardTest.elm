@@ -9,7 +9,7 @@ newBoardTiles : List Board.Tile
 newBoardTiles =
     Board.Selection Board.NotSelected
         :: List.repeat 8 Board.Future
-        ++ [ Board.Final Board.FinalQuestion ]
+        ++ [ Board.Final Board.FinalFuture ]
 
 
 suite : Test
