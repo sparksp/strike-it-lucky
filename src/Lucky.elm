@@ -386,63 +386,53 @@ viewButton action class_ label =
     a [ class "btn", class class_, onClick action ] [ text label ]
 
 
-viewQuestionControls : Board.Tile -> List (Html Msg)
-viewQuestionControls tile =
-    case tile of
-        Board.Final Board.FinalQuestion ->
-            [ span [ class "label" ] [ text "Final Question:" ]
-            , viewButton (FinalAnswer Board.Pass) "btn-pass" "Correct"
-            , viewButton (FinalAnswer Board.Fail) "btn-fail" "Wrong"
-            ]
-
-        Board.Final (Board.FinalAnswer Board.Pass) ->
-            [ span [ class "label" ] [ text "Congratulations!" ] ]
-
-        Board.Selection (Board.QuestionAt _ _) ->
-            [ span [ class "label" ] [ text "Answer:" ]
-            , viewButton (Answer Board.Pass) "btn-pass" "Correct"
-            , viewButton (Answer Board.Fail) "btn-fail" "Wrong"
-            ]
-
-        Board.Selection Board.NotSelected ->
-            [ span [ class "label" ] [ text "Choose:" ]
-            , viewButton (Select Board.Top) "btn-location btn-top" "Top"
-            , viewButton (Select Board.Middle) "btn-location btn-middle" "Middle"
-            , viewButton (Select Board.Bottom) "btn-location btn-Bottom" "Bottom"
-            ]
-
-        Board.Selection (Board.LoadingAt _) ->
-            [ span [ class "label" ] [ text "Picking a question..." ] ]
-
-        -- Oops?
-        _ ->
-            []
-
-
-viewResetControl : List (Html Msg)
-viewResetControl =
-    [ span [ class "spacer" ] []
-    , viewButton Reset "btn-reset" "Reset"
-    ]
-
-
-viewControls : Player -> Html Msg
-viewControls { board } =
+viewControls : Board.Tile -> Html Msg
+viewControls tile =
     div [ class "controls" ]
-        (viewQuestionControls (Board.selected board)
-            ++ viewResetControl
+        (case tile of
+            Board.Final Board.FinalQuestion ->
+                [ span [ class "label" ] [ text "Final Question:" ]
+                , viewButton (FinalAnswer Board.Pass) "btn-pass" "Correct"
+                , viewButton (FinalAnswer Board.Fail) "btn-fail" "Wrong"
+                ]
+
+            Board.Final (Board.FinalAnswer Board.Pass) ->
+                [ span [ class "label" ] [ text "Congratulations!" ]
+                , span [ class "spacer" ] []
+                , viewButton Reset "btn-reset" "Play Again"
+                ]
+
+            Board.Selection (Board.QuestionAt _ _) ->
+                [ span [ class "label" ] [ text "Answer:" ]
+                , viewButton (Answer Board.Pass) "btn-pass" "Correct"
+                , viewButton (Answer Board.Fail) "btn-fail" "Wrong"
+                ]
+
+            Board.Selection Board.NotSelected ->
+                [ span [ class "label" ] [ text "Choose:" ]
+                , viewButton (Select Board.Top) "btn-location btn-top" "Top"
+                , viewButton (Select Board.Middle) "btn-location btn-middle" "Middle"
+                , viewButton (Select Board.Bottom) "btn-location btn-Bottom" "Bottom"
+                ]
+
+            Board.Selection (Board.LoadingAt _) ->
+                [ span [ class "label" ] [ text "Picking a question..." ] ]
+
+            -- Oops?
+            _ ->
+                []
         )
 
 
 view : Model -> Html Msg
 view model =
     let
-        player =
+        ({ board } as player) =
             ZipList.selected model.players
     in
     div [ class "main" ]
         [ h1 [] [ text "Strike It Lucky" ]
         , viewBoard player
-        , viewControls player
+        , viewControls (Board.selected board)
         , viewMiniBoards model.players
         ]
