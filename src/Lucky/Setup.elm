@@ -101,8 +101,15 @@ update msg model =
             )
 
         AddPlayer ->
+            let
+                numberOfPlayers =
+                    Array.length model.playerNames + 2
+
+                newPlayerName =
+                    "Player " ++ String.fromInt numberOfPlayers
+            in
             ( { model
-                | playerNames = Array.push "" model.playerNames
+                | playerNames = Array.push newPlayerName model.playerNames
               }
             , Cmd.none
             )
