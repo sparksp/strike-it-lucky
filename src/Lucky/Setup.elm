@@ -11,11 +11,13 @@ module Lucky.Setup exposing
 -}
 
 import Array exposing (Array)
+import Browser.Dom as Dom
 import Difficulty exposing (Difficulty)
 import Html exposing (Html, div, h1, h2, input, label, span, text)
 import Html.Attributes as Attr exposing (class, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Lucky.Settings exposing (Settings)
+import Task
 
 
 type alias Model =
@@ -44,6 +46,7 @@ type InternalMsg
     | SetPlayerName String
     | SetPlayerNameAt Int String
     | RemovePlayerAt Int
+    | Focus (Result Dom.Error ())
 
 
 type ExternalMsg
@@ -111,8 +114,11 @@ update msg model =
             ( { model
                 | playerNames = Array.push newPlayerName model.playerNames
               }
-            , Cmd.none
+            , Dom.focus (playerDomId <| Array.length model.playerNames) |> Task.attempt (ForSelf << Focus)
             )
+
+        Focus _ ->
+            ( model, Cmd.none )
 
         SetPlayerName newName ->
             ( { model
@@ -136,13 +142,19 @@ update msg model =
             )
 
 
-inputPlayerName : (String -> Msg) -> String -> Html Msg
-inputPlayerName msg playerName =
+playerDomId : Int -> String
+playerDomId index =
+    "player-name-" ++ String.fromInt (index + 1)
+
+
+inputPlayerName : (String -> Msg) -> String -> String -> Html Msg
+inputPlayerName msg id playerName =
     input
         [ type_ "text"
         , class "form-input form-input-text"
         , value playerName
         , onInput msg
+        , Attr.id id
         , Attr.placeholder "Player Name"
         , Attr.required True
         ]
@@ -192,13 +204,13 @@ view model =
             , Html.ol [ class "form-list player-name" ] <|
                 Html.li []
                     [ div [ class "form-input-group" ]
-                        [ inputPlayerName (SetPlayerName >> ForSelf) model.playerName ]
+                        [ inputPlayerName (SetPlayerName >> ForSelf) "player-name-0" model.playerName ]
                     ]
                     :: List.indexedMap
                         (\index name ->
                             Html.li []
                                 [ div [ class "form-input-group" ]
-                                    [ inputPlayerName (SetPlayerNameAt index >> ForSelf) name
+                                    [ inputPlayerName (SetPlayerNameAt index >> ForSelf) (playerDomId index) name
                                     , inputButton "X" (RemovePlayerAt index |> ForSelf)
                                     ]
                                 ]
