@@ -31,7 +31,7 @@ initialModel : Model
 initialModel =
     { difficulty = Difficulty.fromInt 4
     , playerName = "Player 1"
-    , playerNames = Array.empty
+    , playerNames = Array.fromList [ "Player 2" ]
     }
 
 
