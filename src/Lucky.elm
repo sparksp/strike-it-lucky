@@ -357,14 +357,14 @@ viewMiniLocation tile =
 viewMiniBoards : ZipList Player -> Html Msg
 viewMiniBoards players =
     players
-        |> (ZipList.mapWithPosition <|
-                \position player ->
-                    if position /= ZipList.Selected then
-                        viewMiniBoard player
+        |> ZipList.mapWithPosition
+            (\position player ->
+                if position /= ZipList.Selected then
+                    viewMiniBoard player
 
-                    else
-                        div [] []
-           )
+                else
+                    div [] []
+            )
         |> ZipList.toList
         |> div [ class "other-players" ]
 

@@ -67,13 +67,8 @@ update msg model =
                 |> processPageUpdate Lucky LuckyMsg model
 
         -- Oops
-        ( _, _ ) ->
+        _ ->
             ( model, Cmd.none )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
 
 
 view : Model -> Document Msg
@@ -100,5 +95,5 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = subscriptions
+        , subscriptions = \_ -> Sub.none
         }
