@@ -135,7 +135,7 @@ suite =
             [ fuzz int "does not change if no item passes the check" <|
                 \selected ->
                     ZipList.fromLists [ 1, 2 ] selected [ 4, 5, 6 ]
-                        |> ZipList.select (always False)
+                        |> ZipList.select (\_ -> False)
                         |> ZipList.selected
                         |> Expect.equal selected
             , test "selects the first item to pass the check" <|

@@ -147,7 +147,7 @@ map : (Tile -> a) -> Board -> List a
 map func original =
     mapAnswers (Answer >> func) original
         ++ mapSelected (Selection >> func) original
-        ++ mapRemaining (always Future >> func) original
+        ++ mapRemaining ((\_ -> Future) >> func) original
         ++ mapFinal (Final >> func) original
 
 

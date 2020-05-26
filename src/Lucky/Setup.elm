@@ -114,7 +114,7 @@ update msg model =
             ( { model
                 | playerNames = Array.push newPlayerName model.playerNames
               }
-            , Dom.focus (playerDomId <| Array.length model.playerNames) |> Task.attempt (ForSelf << Focus)
+            , Dom.focus (playerDomId (Array.length model.playerNames)) |> Task.attempt (Focus >> ForSelf)
             )
 
         Focus _ ->
@@ -163,18 +163,18 @@ inputPlayerName msg id playerName =
 
 inputDifficulty : (String -> Msg) -> Difficulty -> List (Html Msg)
 inputDifficulty msg value =
-    [ span [ class "form-range-label" ] [ text <| Difficulty.toString Difficulty.min ]
+    [ span [ class "form-range-label" ] [ text (Difficulty.min |> Difficulty.toString) ]
     , input
         [ type_ "range"
         , class "form-input"
-        , Attr.min <| Difficulty.toString Difficulty.min
-        , Attr.max <| Difficulty.toString Difficulty.max
-        , Attr.value <| Difficulty.toString value
+        , Attr.min (Difficulty.min |> Difficulty.toString)
+        , Attr.max (Difficulty.max |> Difficulty.toString)
+        , Attr.value (value |> Difficulty.toString)
         , onInput msg
-        , Attr.title <| Difficulty.toString value
+        , Attr.title (value |> Difficulty.toString)
         ]
         []
-    , span [ class "form-range-label" ] [ text <| Difficulty.toString Difficulty.max ]
+    , span [ class "form-range-label" ] [ text (Difficulty.max |> Difficulty.toString) ]
     ]
 
 
@@ -197,12 +197,11 @@ view model =
             [ h2 [] [ text "Settings" ]
             , div [ class "input-group difficulty" ]
                 [ label [ class "form-label" ] [ text "Difficulty" ]
-                , div [ class "form-input-group" ] <|
-                    inputDifficulty (SetDifficulty >> ForSelf) model.difficulty
+                , div [ class "form-input-group" ] (inputDifficulty (SetDifficulty >> ForSelf) model.difficulty)
                 ]
             , div [ class "form-label" ] [ text "Players" ]
-            , Html.ol [ class "form-list player-name" ] <|
-                Html.li []
+            , Html.ol [ class "form-list player-name" ]
+                (Html.li []
                     [ div [ class "form-input-group" ]
                         [ inputPlayerName (SetPlayerName >> ForSelf) "player-name-0" model.playerName ]
                     ]
@@ -216,6 +215,7 @@ view model =
                                 ]
                         )
                         (Array.toList model.playerNames)
+                )
             , div [ class "input-group form-controls" ]
                 [ inputButton "Add Player" (AddPlayer |> ForSelf)
                 , Html.span [ class "spacer" ] []

@@ -1,31 +1,40 @@
 {
   "name": "strike-it-lucky",
   "version": "1.0.0",
-  "description": "",
+  "description": "A browser based presentation game reminiscent of the 80's TV Show: Strike It Lucky.",
+  "author": "Phill Sparks <me@phills.me.uk>",
+  "repository": "https://github.com/sparksp/strike-it-lucky/",
   "main": "src/Main.elm",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sparksp/strike-it-lucky.git"
-  },
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "dev": "parcel assets/entry.html --out-file=index.html",
+    "clean:dist": "rimraf dist",
+    "clean:elm": "rimraf elm-stuff",
+    "clean:parcel": "rimraf .cache",
+    "clean": "run-p clean:dist clean:elm clean:parcel ;",
+    "prebuild": "run-s clean ;",
     "build": "parcel build assets/entry.html --out-file=index.html",
-    "test": "elm-format --validate . && elm-test"
+    "dev": "parcel assets/entry.html --out-file=index.html",
+    "lint:format": "elm-format --validate src/ tests/",
+    "lint:review": "elm-review",
+    "lint": "run-s lint:format lint:review ;",
+    "test": "elm-test",
+    "test:watch": "elm-test --watch",
+    "all": "run-s build test lint ;"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "devDependencies": {
     "elm": "^0.19.1-3",
-    "elm-format": "^0.8.2",
+    "elm-format": "^0.8.3",
     "elm-hot": "^1.1.4",
+    "elm-review": "^2.0.2",
     "elm-test": "^0.19.1-revision2",
     "node-elm-compiler": "^5.0.4",
+    "npm-run-all": "^4.1.5",
     "parcel-bundler": "^1.12.4",
-    "sass": "^1.23.7"
+    "rimraf": "^3.0.2",
+    "sass": "^1.26.5"
   },
   "dependencies": {
     "normalize.css": "^8.0.1"
