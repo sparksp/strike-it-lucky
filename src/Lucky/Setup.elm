@@ -1,6 +1,7 @@
 module Lucky.Setup exposing
     ( Model, InternalMsg, init, update, view
     , Translator, translator
+    , Msg, TranslationDictionary
     )
 
 {-| A form to generate `Lucky.Settings`
