@@ -1,0 +1,46 @@
+name: Fixes
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - uses: actions/cache@v1
+        id: elm-cache
+        with:
+          path: ~/.elm
+          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Add npm bin to path
+        run: echo ::add-path::$(npm bin)
+      - name: Run elm-format
+        run: elm-format --yes
+      - name: Apply elm-review fixes
+        id: elm-review
+        run: yes | elm-review --fix-all
+        continue-on-error: true
+      - uses: peter-evans/create-pull-request@v2
+        with:
+          commit-message: 'Apply elm-review fixes'
+          branch: fixes/${{ steps.extract_branch.outputs.branch }}
+          title: "Apply elm-review fixes"
+          body: "*This is an automated pull request because elm-review found problems that could be fixed automatically.*"
+          reviewers: sparksp
+          assignees: sparksp
