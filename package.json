@@ -16,7 +16,7 @@
     "prebuild": "run-s clean ;",
     "build": "parcel build assets/entry.html --out-file=index.html",
     "dev": "parcel assets/entry.html --out-file=index.html",
-    "lint:format": "elm-format --validate src/ tests/",
+    "lint:format": "elm-format --yes src/ tests/",
     "lint:review": "elm-review",
     "lint": "run-s lint:format lint:review ;",
     "test": "elm-test",

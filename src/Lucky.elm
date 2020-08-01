@@ -25,7 +25,11 @@ type alias Player =
     }
 
 
-type alias Model =
+type Model
+    = Model ModelInternals
+
+
+type alias ModelInternals =
     { difficulty : Difficulty
     , streak : Int
     , players : ZipList Player
@@ -39,13 +43,14 @@ initPlayer =
 
 initialModel : Settings -> Model
 initialModel { difficulty, playerName, morePlayerNames } =
-    { difficulty = difficulty
-    , streak = 0
-    , players =
-        ZipList.fromLists []
-            (initPlayer playerName)
-            (List.map initPlayer morePlayerNames)
-    }
+    Model
+        { difficulty = difficulty
+        , streak = 0
+        , players =
+            ZipList.fromLists []
+                (initPlayer playerName)
+                (List.map initPlayer morePlayerNames)
+        }
 
 
 init : Settings -> ( Model, Cmd Msg )
@@ -58,7 +63,7 @@ resetPlayer player =
     { player | board = Board.new }
 
 
-reset : Model -> Model
+reset : ModelInternals -> ModelInternals
 reset model =
     { model
         | streak = 0
@@ -104,25 +109,25 @@ updatePlayerBoard fn players =
         players
 
 
-updateBoard : (Board -> Board) -> Model -> Model
+updateBoard : (Board -> Board) -> ModelInternals -> ModelInternals
 updateBoard fn model =
     { model | players = updatePlayerBoard fn model.players }
 
 
-updateAnswer : Board.Answer -> Model -> Model
+updateAnswer : Board.Answer -> ModelInternals -> ModelInternals
 updateAnswer answer model =
     { model | players = updatePlayerBoard (Board.answer answer) model.players }
         |> updateStreak answer
         |> switchPlayer answer
 
 
-updateFinalAnswer : Board.Answer -> Model -> Model
+updateFinalAnswer : Board.Answer -> ModelInternals -> ModelInternals
 updateFinalAnswer answer model =
     { model | players = updatePlayerBoard (Board.finalAnswer answer) model.players }
         |> switchPlayer answer
 
 
-updateStreak : Board.Answer -> Model -> Model
+updateStreak : Board.Answer -> ModelInternals -> ModelInternals
 updateStreak answer model =
     case answer of
         Board.Fail ->
@@ -132,7 +137,7 @@ updateStreak answer model =
             { model | streak = 1 + model.streak }
 
 
-switchPlayer : Board.Answer -> Model -> Model
+switchPlayer : Board.Answer -> ModelInternals -> ModelInternals
 switchPlayer answer model =
     case answer of
         Board.Fail ->
@@ -142,7 +147,7 @@ switchPlayer answer model =
             model
 
 
-updateRandomSelection : RandomSelection -> Model -> Model
+updateRandomSelection : RandomSelection -> ModelInternals -> ModelInternals
 updateRandomSelection selection model =
     case selection of
         RandomQuestion question ->
@@ -153,28 +158,28 @@ updateRandomSelection selection model =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg (Model model) =
     case msg of
         Reset ->
-            ( reset model, Cmd.none )
+            ( Model (reset model), Cmd.none )
 
         Select location ->
-            ( updateBoard (Board.loading location) model
+            ( Model (updateBoard (Board.loading location) model)
             , newTile model.difficulty model.streak
             )
 
         Answer answer ->
-            ( updateAnswer answer model
+            ( Model (updateAnswer answer model)
             , Cmd.none
             )
 
         FinalAnswer answer ->
-            ( updateFinalAnswer answer model
+            ( Model (updateFinalAnswer answer model)
             , Cmd.none
             )
 
         NewRandomSelection selection ->
-            ( updateRandomSelection selection model
+            ( Model (updateRandomSelection selection model)
             , Cmd.none
             )
 
@@ -425,7 +430,7 @@ viewControls tile =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     let
         ({ board } as player) =
             ZipList.selected model.players
