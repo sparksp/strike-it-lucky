@@ -29,14 +29,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Add npm bin to path
-        run: echo ::add-path::$(npm bin)
+        run: npm bin >> $GITHUB_PATH
       - name: Run elm-format
         run: elm-format --yes
       - name: Apply elm-review fixes
         id: elm-review
         run: yes | elm-review --fix-all
         continue-on-error: true
-      - uses: peter-evans/create-pull-request@v2
+      - uses: peter-evans/create-pull-request@v3
         with:
           commit-message: 'Apply elm-review fixes'
           branch: fixes/${{ steps.extract_branch.outputs.branch }}
