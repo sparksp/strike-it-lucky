@@ -47,7 +47,7 @@ type InternalMsg
     | SetPlayerName String
     | SetPlayerNameAt Int String
     | RemovePlayerAt Int
-    | Focus (Result Dom.Error ())
+    | Focus
 
 
 type ExternalMsg
@@ -106,19 +106,21 @@ update msg model =
 
         AddPlayer ->
             let
+                numberOfPlayers : Int
                 numberOfPlayers =
                     Array.length model.playerNames + 2
 
+                newPlayerName : String
                 newPlayerName =
                     "Player " ++ String.fromInt numberOfPlayers
             in
             ( { model
                 | playerNames = Array.push newPlayerName model.playerNames
               }
-            , Dom.focus (playerDomId (Array.length model.playerNames)) |> Task.attempt (Focus >> ForSelf)
+            , Dom.focus (playerDomId (Array.length model.playerNames)) |> Task.attempt ((\_ -> Focus) >> ForSelf)
             )
 
-        Focus _ ->
+        Focus ->
             ( model, Cmd.none )
 
         SetPlayerName newName ->
@@ -163,16 +165,16 @@ inputPlayerName msg id playerName =
 
 
 inputDifficulty : (String -> Msg) -> Difficulty -> List (Html Msg)
-inputDifficulty msg value =
+inputDifficulty msg difficulty =
     [ span [ class "form-range-label" ] [ text (Difficulty.min |> Difficulty.toString) ]
     , input
         [ type_ "range"
         , class "form-input"
         , Attr.min (Difficulty.min |> Difficulty.toString)
         , Attr.max (Difficulty.max |> Difficulty.toString)
-        , Attr.value (value |> Difficulty.toString)
+        , value (difficulty |> Difficulty.toString)
         , onInput msg
-        , Attr.title (value |> Difficulty.toString)
+        , Attr.title (difficulty |> Difficulty.toString)
         ]
         []
     , span [ class "form-range-label" ] [ text (Difficulty.max |> Difficulty.toString) ]
@@ -219,7 +221,7 @@ view model =
                 )
             , div [ class "input-group form-controls" ]
                 [ inputButton "Add Player" (AddPlayer |> ForSelf)
-                , Html.span [ class "spacer" ] []
+                , span [ class "spacer" ] []
                 , input [ type_ "submit", class "form-btn btn", value "Start Game" ] []
                 ]
             ]
