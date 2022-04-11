@@ -2,7 +2,7 @@ all: clean build
 
 .PHONY: build
 build:
-	npm run build --silent
+	yarn run build --silent
 
 .PHONY: clean
 clean:
@@ -10,4 +10,4 @@ clean:
 
 .PHONY: serve
 serve:
-	npm run dev --silent
+	yarn run dev --silent
