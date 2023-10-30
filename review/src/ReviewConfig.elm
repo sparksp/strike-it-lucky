@@ -1,6 +1,7 @@
 module ReviewConfig exposing (config)
 
-import Documentation.ReadmeLinksPointToCurrentVersion
+import Docs.ReviewLinksAndSections
+import Docs.UpToDateReadmeLinks
 import NoAlways
 import NoBooleanCase
 import NoDebug.Log
@@ -37,7 +38,8 @@ import Vendor.NoFullyAppliedPrefixOperator as NoFullyAppliedPrefixOperator
 
 config : List Rule
 config =
-    [ Documentation.ReadmeLinksPointToCurrentVersion.rule
+    [ Docs.ReviewLinksAndSections.rule
+    , Docs.UpToDateReadmeLinks.rule
     , NoAlways.rule
     , NoBooleanCase.rule
     , NoDebug.Log.rule
