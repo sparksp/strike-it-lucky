@@ -1,5 +1,5 @@
 elm-stuff
 repl-temp-*
-.cache
+.parcel-cache
 dist
 /node_modules/
